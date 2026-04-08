@@ -1,0 +1,193 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — post-bootstrap.yml
+#  OS 설치 후 초기 설정
+#  (Salt Minion 설치, 서비스 등록, 공통 패키지, 보안 설정)
+# ════════════════════════════════════════════
+- name: OS 설치 후 초기 설정 (Post-Bootstrap)
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    salt_master: "{{ salt_master | default('salt-master.internal') }}"
+    salt_minion_id: "{{ inventory_hostname }}"
+    deploy_env: "{{ deploy_env | default('production') }}"
+    common_packages:
+      - vim
+      - curl
+      - wget
+      - jq
+      - net-tools
+      - sysstat
+      - tcpdump
+      - nmap-ncat
+      - rsync
+      - git
+      - python3
+      - python3-pip
+
+  pre_tasks:
+    - name: OS 정보 확인
+      ansible.builtin.debug:
+        msg: "OS: {{ ansible_distribution }} {{ ansible_distribution_version }} | Hostname: {{ inventory_hostname }}"
+
+  tasks:
+    # ── 시스템 업데이트 ───────────────────────
+    - name: 시스템 패키지 업데이트
+      ansible.builtin.package:
+        name: "*"
+        state: latest
+        update_cache: true
+
+    # ── 필수 패키지 설치 ──────────────────────
+    - name: 공통 패키지 설치
+      ansible.builtin.package:
+        name: "{{ common_packages }}"
+        state: present
+
+    # ── Hostname 설정 ─────────────────────────
+    - name: Hostname 설정
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: /etc/hosts 업데이트
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^127\\.0\\.1\\.1"
+        line: "127.0.1.1 {{ inventory_hostname }}"
+
+    # ── 시스템 튜닝 ───────────────────────────
+    - name: sysctl 파라미터 설정
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { name: net.core.somaxconn, value: "65535" }
+        - { name: net.ipv4.tcp_max_syn_backlog, value: "65535" }
+        - { name: net.ipv4.ip_local_port_range, value: "1024 65535" }
+        - { name: vm.swappiness, value: "10" }
+        - { name: vm.overcommit_memory, value: "1" }
+        - { name: net.core.rmem_max, value: "134217728" }
+        - { name: net.core.wmem_max, value: "134217728" }
+
+    - name: limits.conf 설정
+      community.general.pam_limits:
+        domain: "*"
+        limit_type: "{{ item.type }}"
+        limit_item: "{{ item.item }}"
+        value: "{{ item.value }}"
+      loop:
+        - { type: soft, item: nofile, value: "65536" }
+        - { type: hard, item: nofile, value: "65536" }
+        - { type: soft, item: nproc,  value: "32768" }
+        - { type: hard, item: nproc,  value: "32768" }
+
+    # ── Salt Minion 설치 ──────────────────────
+    - name: Salt Minion 설치
+      block:
+        - name: Salt 저장소 추가
+          ansible.builtin.command: >
+            rpm --import https://repo.saltproject.io/salt/py3/redhat/9/x86_64/latest/SALTSTACK-GPG-KEY.pub
+          changed_when: true
+          when: ansible_os_family == 'RedHat'
+
+        - name: Salt Minion 패키지 설치
+          ansible.builtin.package:
+            name: salt-minion
+            state: present
+
+        - name: Salt Minion 설정 배포
+          ansible.builtin.template:
+            src: templates/salt_minion.conf.j2
+            dest: /etc/salt/minion
+            mode: '0640'
+
+        - name: Salt Master 설정
+          ansible.builtin.lineinfile:
+            path: /etc/salt/minion
+            regexp: "^#?master:"
+            line: "master: {{ salt_master }}"
+
+        - name: Salt Minion ID 설정
+          ansible.builtin.copy:
+            content: "{{ salt_minion_id }}\n"
+            dest: /etc/salt/minion_id
+            mode: '0644'
+
+        - name: Salt Minion 서비스 활성화
+          ansible.builtin.systemd:
+            name: salt-minion
+            enabled: true
+            state: started
+
+    # ── SSH 보안 강화 ─────────────────────────
+    - name: SSH 설정 강화
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        validate: '/usr/sbin/sshd -t -f %s'
+      loop:
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?X11Forwarding', line: 'X11Forwarding no' }
+        - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries 3' }
+        - { regexp: '^#?ClientAliveInterval', line: 'ClientAliveInterval 300' }
+        - { regexp: '^#?ClientAliveCountMax', line: 'ClientAliveCountMax 2' }
+      notify: sshd 재시작
+
+    # ── 시간 동기화 ───────────────────────────
+    - name: chrony 설치 및 설정
+      block:
+        - name: chrony 설치
+          ansible.builtin.package:
+            name: chrony
+            state: present
+
+        - name: NTP 서버 설정
+          ansible.builtin.lineinfile:
+            path: /etc/chrony.conf
+            regexp: "^pool"
+            line: "server {{ ntp_server | default('time.internal') }} iburst"
+
+        - name: chrony 활성화
+          ansible.builtin.systemd:
+            name: chronyd
+            enabled: true
+            state: started
+
+    # ── 불필요한 서비스 비활성화 ──────────────
+    - name: 불필요한 서비스 비활성화
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: false
+        state: stopped
+      loop:
+        - bluetooth
+        - cups
+        - avahi-daemon
+      ignore_errors: true
+
+    # ── 완료 확인 ─────────────────────────────
+    - name: 초기화 완료 확인
+      ansible.builtin.command: salt-minion --version
+      register: salt_version
+      changed_when: false
+      ignore_errors: true
+
+    - name: 완료 메시지
+      ansible.builtin.debug:
+        msg:
+          - "✅ Post-Bootstrap 완료: {{ inventory_hostname }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Salt: {{ salt_version.stdout | default('미설치') }}"
+
+  handlers:
+    - name: sshd 재시작
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted

@@ -1,0 +1,156 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — hadoop.yml
+#  Hadoop HDFS/YARN 클러스터 관리
+#
+#  Variables:
+#    hadoop_action: hdfs_balancer | safemode | yarn_restart | namenode_ha | datanode_restart | status | decommission
+#    hadoop_user: (기본 hdfs)
+#    hdfs_balancer_threshold: (기본 10) 밸런서 임계치 (%)
+#    hdfs_balancer_bandwidth: (기본 104857600) 100MB/s
+#    safemode_action: enter | leave | get
+#    decommission_hosts: (decommission 시) 제거할 호스트 목록
+# ════════════════════════════════════════════
+- name: Hadoop 클러스터 관리
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    hadoop_action: "{{ hadoop_action | mandatory }}"
+    hadoop_user: "{{ hadoop_user | default('hdfs') }}"
+    hadoop_home: "{{ hadoop_home | default('/opt/hadoop') }}"
+    hdfs_balancer_threshold: "{{ hdfs_balancer_threshold | default(10) }}"
+    hdfs_balancer_bandwidth: "{{ hdfs_balancer_bandwidth | default(104857600) }}"
+    safemode_action: "{{ safemode_action | default('get') }}"
+
+  tasks:
+    # ── HDFS Balancer ─────────────────────────
+    - name: HDFS Balancer 실행
+      block:
+        - name: SafeMode 상태 확인
+          ansible.builtin.command: hdfs dfsadmin -safemode get
+          become_user: "{{ hadoop_user }}"
+          register: safemode_check
+          changed_when: false
+
+        - name: SafeMode 상태 검증
+          ansible.builtin.fail:
+            msg: "HDFS가 SafeMode 상태입니다. 먼저 SafeMode를 해제하세요."
+          when: "'Safe mode is ON' in safemode_check.stdout"
+
+        - name: Balancer 대역폭 설정
+          ansible.builtin.command: >
+            hdfs dfsadmin -setBalancerBandwidth {{ hdfs_balancer_bandwidth }}
+          become_user: "{{ hadoop_user }}"
+          changed_when: true
+
+        - name: HDFS Balancer 실행
+          ansible.builtin.command: >
+            hdfs balancer -threshold {{ hdfs_balancer_threshold }}
+          become_user: "{{ hadoop_user }}"
+          register: balancer_result
+          changed_when: true
+          async: 7200      # 최대 2시간
+          poll: 60         # 60초마다 상태 확인
+
+        - name: Balancer 결과 출력
+          ansible.builtin.debug:
+            msg: "{{ balancer_result.stdout_lines[-10:] | default([]) }}"
+      run_once: true
+      delegate_to: "{{ groups['hadoop_namenode'][0] | default(inventory_hostname) }}"
+      when: hadoop_action == 'hdfs_balancer'
+
+    # ── SafeMode 관리 ─────────────────────────
+    - name: HDFS SafeMode 관리
+      block:
+        - name: SafeMode 실행
+          ansible.builtin.command: "hdfs dfsadmin -safemode {{ safemode_action }}"
+          become_user: "{{ hadoop_user }}"
+          register: safemode_result
+          changed_when: safemode_action in ['enter', 'leave']
+
+        - name: SafeMode 결과 출력
+          ansible.builtin.debug:
+            msg: "{{ safemode_result.stdout }}"
+      run_once: true
+      when: hadoop_action == 'safemode'
+
+    # ── DataNode 재시작 ───────────────────────
+    - name: DataNode 롤링 재시작
+      block:
+        - name: DataNode 서비스 재시작
+          ansible.builtin.service:
+            name: hadoop-hdfs-datanode
+            state: restarted
+
+        - name: DataNode 기동 대기
+          ansible.builtin.wait_for:
+            port: 9864
+            timeout: 120
+      when: hadoop_action == 'datanode_restart'
+      serial: 2  # 2대씩 재시작
+
+    # ── YARN ResourceManager 재시작 ───────────
+    - name: YARN ResourceManager 재시작
+      block:
+        - name: YARN ResourceManager 재시작
+          ansible.builtin.service:
+            name: hadoop-yarn-resourcemanager
+            state: restarted
+
+        - name: NodeManager 재시작
+          ansible.builtin.service:
+            name: hadoop-yarn-nodemanager
+            state: restarted
+          when: "'yarn_nodemanager' in group_names"
+      when: hadoop_action == 'yarn_restart'
+
+    # ── Decommission ──────────────────────────
+    - name: DataNode Decommission
+      block:
+        - name: exclude 파일에 호스트 추가
+          ansible.builtin.lineinfile:
+            path: "{{ hadoop_home }}/etc/hadoop/dfs.exclude"
+            line: "{{ item }}"
+            create: true
+          loop: "{{ decommission_hosts | default([]) }}"
+
+        - name: 변경사항 적용
+          ansible.builtin.command: hdfs dfsadmin -refreshNodes
+          become_user: "{{ hadoop_user }}"
+          changed_when: true
+
+        - name: Decommission 상태 모니터링
+          ansible.builtin.command: hdfs dfsadmin -report
+          become_user: "{{ hadoop_user }}"
+          register: hdfs_report
+          changed_when: false
+          until: "'Decommissioned' in hdfs_report.stdout or 'Decommission in progress' not in hdfs_report.stdout"
+          retries: 60
+          delay: 60
+      run_once: true
+      when: hadoop_action == 'decommission'
+
+    # ── Status ────────────────────────────────
+    - name: Hadoop 클러스터 상태 확인
+      block:
+        - name: HDFS 상태 조회
+          ansible.builtin.command: hdfs dfsadmin -report
+          become_user: "{{ hadoop_user }}"
+          register: hdfs_report
+          changed_when: false
+
+        - name: YARN 클러스터 상태
+          ansible.builtin.command: yarn node -list
+          become_user: "{{ hadoop_user }}"
+          register: yarn_nodes
+          changed_when: false
+
+        - name: 상태 출력
+          ansible.builtin.debug:
+            msg:
+              - "=== HDFS Report ==="
+              - "{{ hdfs_report.stdout_lines[:15] }}"
+      run_once: true
+      when: hadoop_action == 'status'

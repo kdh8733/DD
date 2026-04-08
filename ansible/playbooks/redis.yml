@@ -1,0 +1,166 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — redis.yml
+#  Redis Cluster 관리
+#
+#  Variables:
+#    redis_action: install | upgrade | failover | scale | replication | config | restart | status
+#    redis_version: (선택) 버전 (예: 7.2.4)
+#    redis_port: (기본 6379)
+#    redis_cluster_enabled: (기본 true)
+#    redis_sentinel_enabled: (기본 false)
+#    redis_maxmemory: (예: 4gb)
+#    redis_maxmemory_policy: (기본 allkeys-lru)
+#    failover_master: (failover 시) 새 master 호스트명
+#    config_key: (config 시) 설정 키
+#    config_value: (config 시) 설정 값
+# ════════════════════════════════════════════
+- name: Redis Cluster 관리
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    redis_action: "{{ redis_action | mandatory }}"
+    redis_port: "{{ redis_port | default(6379) }}"
+    redis_version: "{{ redis_version | default('7.2.4') }}"
+    redis_cluster_enabled: "{{ redis_cluster_enabled | default(true) }}"
+    redis_maxmemory: "{{ redis_maxmemory | default('4gb') }}"
+    redis_maxmemory_policy: "{{ redis_maxmemory_policy | default('allkeys-lru') }}"
+    redis_conf_path: "/etc/redis/redis.conf"
+    redis_service: "redis"
+
+  pre_tasks:
+    - name: 파라미터 검증
+      ansible.builtin.assert:
+        that:
+          - redis_action in ['install', 'upgrade', 'failover', 'scale', 'replication', 'config', 'restart', 'status', 'flushdb']
+        fail_msg: "유효하지 않은 redis_action: {{ redis_action }}"
+
+  tasks:
+    # ── Install / Upgrade ─────────────────────
+    - name: Redis 설치/업그레이드
+      block:
+        - name: Redis 패키지 설치
+          ansible.builtin.package:
+            name: "redis"
+            state: present
+
+        - name: Redis 설정 파일 배포
+          ansible.builtin.template:
+            src: "templates/redis.conf.j2"
+            dest: "{{ redis_conf_path }}"
+            backup: true
+            mode: '0640'
+            owner: redis
+            group: redis
+          notify: redis 재시작
+
+        - name: Redis 서비스 활성화
+          ansible.builtin.systemd:
+            name: "{{ redis_service }}"
+            enabled: true
+            state: started
+      when: redis_action in ['install', 'upgrade']
+
+    # ── Failover ──────────────────────────────
+    - name: Redis Failover 실행
+      block:
+        - name: 현재 Master 확인
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_port }} INFO replication
+          register: replication_info
+          changed_when: false
+
+        - name: Failover 실행 (Sentinel 모드)
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_sentinel_port | default(26379) }}
+            SENTINEL failover {{ redis_cluster_name | default('mymaster') }}
+          when: redis_sentinel_enabled | bool
+
+        - name: Failover 실행 (Cluster 모드)
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_port }} CLUSTER FAILOVER
+          when: not redis_sentinel_enabled | bool
+
+        - name: Failover 결과 대기 (10초)
+          ansible.builtin.wait_for:
+            timeout: 10
+
+        - name: 새 Master 확인
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_port }} INFO replication
+          register: new_replication_info
+          changed_when: false
+
+        - name: Failover 결과 출력
+          ansible.builtin.debug:
+            msg: "{{ new_replication_info.stdout_lines }}"
+      when: redis_action == 'failover'
+
+    # ── Config 변경 (런타임) ──────────────────
+    - name: Redis 설정 변경
+      block:
+        - name: 설정 변경 적용
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_port }} CONFIG SET {{ config_key }} "{{ config_value }}"
+          when:
+            - config_key is defined
+            - config_value is defined
+
+        - name: 설정 영구 저장
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_port }} CONFIG REWRITE
+      when: redis_action == 'config'
+
+    # ── Restart ──────────────────────────────
+    - name: Redis 서비스 재시작
+      block:
+        - name: 클러스터 노드 역할 확인 (Master면 순서 마지막에)
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_port }} INFO replication
+          register: node_role
+          changed_when: false
+
+        - name: Master가 아닌 노드 먼저 재시작
+          ansible.builtin.systemd:
+            name: "{{ redis_service }}"
+            state: restarted
+          when: "'role:master' not in node_role.stdout"
+
+        - name: Master 노드 재시작 (순서 마지막)
+          ansible.builtin.systemd:
+            name: "{{ redis_service }}"
+            state: restarted
+          when: "'role:master' in node_role.stdout"
+      when: redis_action == 'restart'
+      serial: 1
+
+    # ── Status ────────────────────────────────
+    - name: Redis 상태 확인
+      block:
+        - name: Redis INFO 조회
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_port }} INFO all
+          register: redis_info
+          changed_when: false
+
+        - name: 클러스터 노드 목록
+          ansible.builtin.command: >
+            redis-cli -p {{ redis_port }} CLUSTER NODES
+          register: cluster_nodes
+          changed_when: false
+          when: redis_cluster_enabled | bool
+
+        - name: 상태 출력
+          ansible.builtin.debug:
+            msg:
+              - "=== Redis INFO ==="
+              - "{{ redis_info.stdout_lines[:20] }}"
+      when: redis_action == 'status'
+
+  handlers:
+    - name: redis 재시작
+      ansible.builtin.systemd:
+        name: "{{ redis_service }}"
+        state: restarted

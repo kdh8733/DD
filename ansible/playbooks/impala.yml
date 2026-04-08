@@ -1,0 +1,120 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — impala.yml
+#  Impala Daemon 관리 / 메타데이터 갱신 / 통계 수집
+#
+#  Variables:
+#    impala_action: restart | invalidate_metadata | compute_stats | status | config
+#    impala_daemon_type: all | impalad | statestored | catalogd
+#    impala_host: (기본 localhost) Impala 서버
+#    impala_port: (기본 21050) HS2 포트
+#    target_database: (stats 시) 대상 DB
+#    target_table: (stats 시) 대상 테이블
+# ════════════════════════════════════════════
+- name: Impala 관리
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    impala_action: "{{ impala_action | mandatory }}"
+    impala_daemon_type: "{{ impala_daemon_type | default('all') }}"
+    impala_host: "{{ impala_host | default(inventory_hostname) }}"
+    impala_port: "{{ impala_port | default(21050) }}"
+    impala_shell: "impala-shell"
+
+  tasks:
+    # ── Restart ──────────────────────────────
+    - name: Impala 데몬 재시작
+      block:
+        - name: impalad 재시작
+          ansible.builtin.service:
+            name: impala-server
+            state: restarted
+          when: impala_daemon_type in ['all', 'impalad']
+
+        - name: statestored 재시작
+          ansible.builtin.service:
+            name: impala-state-store
+            state: restarted
+          when: impala_daemon_type in ['all', 'statestored']
+
+        - name: catalogd 재시작
+          ansible.builtin.service:
+            name: impala-catalog
+            state: restarted
+          when: impala_daemon_type in ['all', 'catalogd']
+
+        - name: 서비스 기동 대기
+          ansible.builtin.wait_for:
+            host: "{{ inventory_hostname }}"
+            port: "{{ impala_port }}"
+            timeout: 120
+      when: impala_action == 'restart'
+
+    # ── Invalidate Metadata ───────────────────
+    - name: 메타데이터 갱신 (INVALIDATE METADATA)
+      ansible.builtin.command: >
+        {{ impala_shell }}
+        -i {{ impala_host }}:{{ impala_port }}
+        -q "INVALIDATE METADATA"
+        --quiet
+      register: invalidate_result
+      changed_when: true
+      run_once: true
+      when: impala_action == 'invalidate_metadata'
+
+    - name: 메타데이터 갱신 결과 출력
+      ansible.builtin.debug:
+        msg: "{{ invalidate_result.stdout_lines }}"
+      when: impala_action == 'invalidate_metadata'
+      run_once: true
+
+    # ── Compute Stats ─────────────────────────
+    - name: 테이블 통계 수집
+      block:
+        - name: 특정 테이블 통계 수집
+          ansible.builtin.command: >
+            {{ impala_shell }}
+            -i {{ impala_host }}:{{ impala_port }}
+            -d {{ target_database }}
+            -q "COMPUTE STATS {{ target_table }}"
+            --quiet
+          when:
+            - target_database is defined
+            - target_table is defined
+          register: stats_result
+          changed_when: true
+
+        - name: DB 전체 통계 수집
+          ansible.builtin.command: >
+            {{ impala_shell }}
+            -i {{ impala_host }}:{{ impala_port }}
+            -d {{ target_database }}
+            -q "COMPUTE STATS *"
+            --quiet
+          when:
+            - target_database is defined
+            - target_table is not defined
+          register: stats_all_result
+          changed_when: true
+
+        - name: 통계 수집 결과 출력
+          ansible.builtin.debug:
+            msg: "{{ stats_result.stdout_lines | default(stats_all_result.stdout_lines | default([])) }}"
+      run_once: true
+      when: impala_action == 'compute_stats'
+
+    # ── Status ────────────────────────────────
+    - name: Impala 상태 확인
+      block:
+        - name: impalad 상태
+          ansible.builtin.service_facts:
+
+        - name: 서비스 상태 출력
+          ansible.builtin.debug:
+            msg:
+              - "impalad: {{ ansible_facts.services['impala-server.service'].state | default('unknown') }}"
+              - "statestored: {{ ansible_facts.services['impala-state-store.service'].state | default('unknown') }}"
+              - "catalogd: {{ ansible_facts.services['impala-catalog.service'].state | default('unknown') }}"
+      when: impala_action == 'status'

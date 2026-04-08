@@ -1,0 +1,252 @@
+version: "3.9"
+
+# ════════════════════════════════════════════
+#  Dook-Dak (뚝딱) — 개발 환경 Docker Compose
+# ════════════════════════════════════════════
+
+networks:
+  dd-net:
+    driver: bridge
+
+volumes:
+  pg-data:
+  redis-data:
+  keycloak-data:
+  temporal-data:
+  playbooks:
+  inventory:
+  artifacts:
+
+services:
+
+  # ── PostgreSQL ─────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: dd-postgres
+    restart: unless-stopped
+    networks: [dd-net]
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: dookdak
+      POSTGRES_USER: dookdak
+      POSTGRES_PASSWORD: dookdak_pass
+      # Temporal 용 DB도 함께 생성
+      POSTGRES_MULTIPLE_DATABASES: dookdak,temporal
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./scripts/init-multiple-db.sh:/docker-entrypoint-initdb.d/init-multiple-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dookdak -d dookdak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c log_statement=none
+      -c log_duration=off
+
+  # ── Redis ─────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: dd-redis
+    restart: unless-stopped
+    networks: [dd-net]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Keycloak ──────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: dd-keycloak
+    restart: unless-stopped
+    networks: [dd-net]
+    ports:
+      - "8180:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: dookdak
+      KC_DB_PASSWORD: dookdak_pass
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    command: start-dev --import-realm
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ── Temporal (워크플로우 엔진) ──────────
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    container_name: dd-temporal
+    restart: unless-stopped
+    networks: [dd-net]
+    ports:
+      - "7233:7233"
+    environment:
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: dookdak
+      POSTGRES_PWD: dookdak_pass
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: /etc/temporal/config/dynamicconfig.yaml
+    volumes:
+      - temporal-data:/etc/temporal
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  temporal-ui:
+    image: temporalio/ui:2.28.0
+    container_name: dd-temporal-ui
+    restart: unless-stopped
+    networks: [dd-net]
+    ports:
+      - "8088:8080"
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    depends_on:
+      - temporal
+
+  # ── Backend API ───────────────────────
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        CMD: api
+    container_name: dd-api
+    restart: unless-stopped
+    networks: [dd-net]
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgres://dookdak:dookdak_pass@postgres:5432/dookdak
+      REDIS_URL: redis:6379
+      KEYCLOAK_URL: http://keycloak:8080
+      TEMPORAL_ADDRESS: temporal:7233
+      API_PORT: "8080"
+      ANSIBLE_PLAYBOOK_DIR: /opt/dookdak/playbooks
+      ANSIBLE_INVENTORY_DIR: /opt/dookdak/inventory
+      ANSIBLE_RUNNER_ARTIFACTS_DIR: /var/lib/dookdak/artifacts
+    volumes:
+      - playbooks:/opt/dookdak/playbooks
+      - inventory:/opt/dookdak/inventory
+      - artifacts:/var/lib/dookdak/artifacts
+      - ../ansible/playbooks:/opt/dookdak/playbooks:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Ansible Worker ────────────────────
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        CMD: worker
+    container_name: dd-worker
+    restart: unless-stopped
+    networks: [dd-net]
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgres://dookdak:dookdak_pass@postgres:5432/dookdak
+      REDIS_URL: redis:6379
+      ANSIBLE_PLAYBOOK_DIR: /opt/dookdak/playbooks
+      ANSIBLE_INVENTORY_DIR: /opt/dookdak/inventory
+      ANSIBLE_RUNNER_ARTIFACTS_DIR: /var/lib/dookdak/artifacts
+      ANSIBLE_MAX_CONCURRENT_JOBS: "5"
+    volumes:
+      - playbooks:/opt/dookdak/playbooks
+      - inventory:/opt/dookdak/inventory
+      - artifacts:/var/lib/dookdak/artifacts
+      - ../ansible/playbooks:/opt/dookdak/playbooks:ro
+      # SSH 키 (운영: Vault 또는 K8s Secret)
+      - ~/.ssh/id_rsa:/home/ansible/.ssh/id_rsa:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  # ── Frontend (Vite Dev Server) ────────
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.dev
+    container_name: dd-frontend
+    restart: unless-stopped
+    networks: [dd-net]
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+      VITE_WS_BASE_URL: ws://localhost:8080
+      VITE_KEYCLOAK_URL: http://localhost:8180
+      VITE_KEYCLOAK_REALM: infra-platform
+      VITE_KEYCLOAK_CLIENT_ID: dookdak-app
+    volumes:
+      - ../frontend/src:/app/src
+      - ../frontend/public:/app/public
+    depends_on:
+      - api
+    command: npm run dev -- --host 0.0.0.0
+
+  # ── CMDB Sync Cron ────────────────────
+  cmdb-sync:
+    image: alpine:3.19
+    container_name: dd-cmdb-sync
+    restart: unless-stopped
+    networks: [dd-net]
+    env_file:
+      - ../.env
+    volumes:
+      - inventory:/opt/dookdak/inventory
+      - ../scripts/sync-cmdb.sh:/opt/sync-cmdb.sh:ro
+    command: >
+      sh -c "apk add --no-cache curl jq &&
+             while true; do
+               sh /opt/sync-cmdb.sh;
+               sleep $${CMDB_SYNC_INTERVAL_SECONDS:-300};
+             done"
+    depends_on:
+      - api

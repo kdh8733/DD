@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dookdak-worker
+  namespace: dookdak
+  labels:
+    app: dookdak-worker
+    component: worker
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: dookdak-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: dookdak-worker
+    spec:
+      serviceAccountName: dookdak-worker
+      # Ansible Worker는 SSH 키 필요하므로 높은 권한
+      securityContext:
+        runAsUser: 1001  # ansible user
+      containers:
+        - name: worker
+          image: your-registry/dookdak-worker:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: dookdak-config
+            - secretRef:
+                name: dookdak-secrets
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "1Gi"
+            limits:
+              cpu: "4000m"
+              memory: "4Gi"
+          volumeMounts:
+            - name: playbooks
+              mountPath: /opt/dookdak/playbooks
+              readOnly: true
+            - name: inventory
+              mountPath: /opt/dookdak/inventory
+              readOnly: true
+            - name: artifacts
+              mountPath: /var/lib/dookdak/artifacts
+            - name: ssh-key
+              mountPath: /home/ansible/.ssh
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "pgrep -f worker || exit 1"
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: playbooks
+          configMap:
+            name: dookdak-playbooks
+        - name: inventory
+          persistentVolumeClaim:
+            claimName: dookdak-inventory-pvc
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: dookdak-artifacts-pvc
+        - name: ssh-key
+          secret:
+            secretName: ansible-ssh-key
+            defaultMode: 0400
+---
+# KEDA ScaledObject — Redis 큐 깊이 기반 자동 스케일
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: dookdak-worker-scaler
+  namespace: dookdak
+spec:
+  scaleTargetRef:
+    name: dookdak-worker
+  minReplicaCount: 2
+  maxReplicaCount: 16
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    - type: redis
+      metadata:
+        address: redis-service.dookdak.svc.cluster.local:6379
+        listName: "asynq:{default}:queued"
+        listLength: "10"    # 큐 Job 10개당 Worker 1개 추가
+        enableTLS: "false"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dookdak-worker
+  namespace: dookdak

@@ -1,0 +1,72 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — file-serving.yml
+#  rootentry 파일 배포 (설정/바이너리/스크립트)
+#
+#  Variables:
+#    file_src_dir: 로컬 소스 디렉토리 (기본: files/)
+#    file_dest_dir: 원격 대상 디렉토리 (기본: /opt/rootentry)
+#    file_owner: 소유자 (기본: root)
+#    file_group: 그룹 (기본: root)
+#    file_mode: 권한 (기본: '0644')
+#    file_list: (선택) 특정 파일 목록만 배포
+#    post_deploy_cmd: (선택) 배포 후 실행 명령
+# ════════════════════════════════════════════
+- name: 파일 배포 (rootentry)
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: false
+  become: true
+
+  vars:
+    file_src_dir: "{{ file_src_dir | default('files/rootentry') }}"
+    file_dest_dir: "{{ file_dest_dir | default('/opt/rootentry') }}"
+    file_owner: "{{ file_owner | default('root') }}"
+    file_group: "{{ file_group | default('root') }}"
+    file_mode: "{{ file_mode | default('0644') }}"
+    deploy_timestamp: "{{ ansible_date_time.epoch | default(lookup('pipe', 'date +%s')) }}"
+
+  tasks:
+    - name: 대상 디렉토리 생성
+      ansible.builtin.file:
+        path: "{{ file_dest_dir }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ file_owner }}"
+        group: "{{ file_group }}"
+
+    - name: 파일 동기화 (전체)
+      ansible.posix.synchronize:
+        src: "{{ file_src_dir }}/"
+        dest: "{{ file_dest_dir }}/"
+        archive: true
+        delete: "{{ delete_extra_files | default(false) }}"
+        checksum: true
+      register: sync_result
+      when: file_list is not defined
+
+    - name: 특정 파일만 배포
+      ansible.builtin.copy:
+        src: "{{ file_src_dir }}/{{ item }}"
+        dest: "{{ file_dest_dir }}/{{ item }}"
+        owner: "{{ file_owner }}"
+        group: "{{ file_group }}"
+        mode: "{{ file_mode }}"
+        backup: true
+      loop: "{{ file_list }}"
+      register: file_copy_result
+      when: file_list is defined
+
+    - name: 변경된 파일 수 출력
+      ansible.builtin.debug:
+        msg: "배포 완료: {{ sync_result.changed | default(file_copy_result.results | selectattr('changed') | list | length) }}개 파일 변경"
+
+    - name: 배포 후 명령 실행
+      ansible.builtin.command: "{{ post_deploy_cmd }}"
+      when: post_deploy_cmd is defined
+      changed_when: true
+      register: post_cmd_result
+
+    - name: 배포 후 명령 결과
+      ansible.builtin.debug:
+        msg: "{{ post_cmd_result.stdout_lines | default([]) }}"
+      when: post_deploy_cmd is defined

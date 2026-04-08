@@ -1,0 +1,66 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — settings-conf.yml
+#  Salt Minion 설정 배포 (settings.conf 갱신)
+#
+#  Variables:
+#    salt_master: (기본 salt-master.internal) Salt Master 주소
+#    salt_log_level: (기본 warning) 로그 레벨
+#    salt_hash_type: (기본 sha256) 해시 타입
+#    settings_conf_template: (선택) 커스텀 설정 파일 경로
+# ════════════════════════════════════════════
+- name: Salt Minion 설정 배포
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: false
+  become: true
+
+  vars:
+    salt_master: "{{ salt_master | default('salt-master.internal') }}"
+    salt_log_level: "{{ salt_log_level | default('warning') }}"
+    salt_hash_type: "{{ salt_hash_type | default('sha256') }}"
+    salt_conf_dir: /etc/salt/minion.d
+    salt_settings_file: "{{ salt_conf_dir }}/settings.conf"
+
+  tasks:
+    - name: Salt minion.d 디렉토리 확인
+      ansible.builtin.file:
+        path: "{{ salt_conf_dir }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: settings.conf 배포
+      ansible.builtin.template:
+        src: "{{ settings_conf_template | default('templates/settings.conf.j2') }}"
+        dest: "{{ salt_settings_file }}"
+        mode: '0640'
+        owner: root
+        group: root
+        backup: true
+      notify: salt-minion 재시작
+
+    - name: 설정 파일 내용 확인
+      ansible.builtin.command: cat {{ salt_settings_file }}
+      register: settings_content
+      changed_when: false
+
+    - name: 설정 내용 출력
+      ansible.builtin.debug:
+        msg: "{{ settings_content.stdout_lines }}"
+
+    - name: Salt Minion 연결 테스트
+      ansible.builtin.command: salt-call test.ping
+      register: salt_test
+      changed_when: false
+      ignore_errors: true
+
+    - name: 연결 테스트 결과
+      ansible.builtin.debug:
+        msg: "Salt 연결 상태: {{ 'OK' if salt_test.rc == 0 else 'FAIL - Master 확인 필요' }}"
+
+  handlers:
+    - name: salt-minion 재시작
+      ansible.builtin.systemd:
+        name: salt-minion
+        state: restarted

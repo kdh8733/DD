@@ -1,0 +1,104 @@
+{
+  "realm": "infra-platform",
+  "displayName": "Dook-Dak 배포 플랫폼",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 3600,
+  "ssoSessionMaxLifespan": 36000,
+  "clients": [
+    {
+      "clientId": "dookdak-app",
+      "name": "Dook-Dak App",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "change-me-in-production",
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3000/*",
+        "https://dookdak.internal/*"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "config": {
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "groups": [
+    { "name": "infra-admin" },
+    { "name": "infra-senior" },
+    { "name": "infra-devops" },
+    { "name": "sre-team" },
+    { "name": "developer" },
+    { "name": "all-employees" }
+  ],
+  "users": [
+    {
+      "username": "admin.user",
+      "email": "admin@company.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "admin123", "temporary": false }],
+      "groups": ["/infra-admin"]
+    },
+    {
+      "username": "senior.sre",
+      "email": "senior@company.com",
+      "firstName": "Senior",
+      "lastName": "SRE",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "senior123", "temporary": false }],
+      "groups": ["/infra-senior"]
+    },
+    {
+      "username": "devops.user",
+      "email": "devops@company.com",
+      "firstName": "DevOps",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "devops123", "temporary": false }],
+      "groups": ["/infra-devops"]
+    },
+    {
+      "username": "dev.user",
+      "email": "dev@company.com",
+      "firstName": "Dev",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "dev123", "temporary": false }],
+      "groups": ["/developer"]
+    }
+  ]
+}

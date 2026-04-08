@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" width="960" height="580" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <rect width="960" height="580" fill="#f1f5f9"/>
+
+  <!-- Sidebar (same as dashboard) -->
+  <rect width="220" height="580" fill="#0d1117"/>
+  <rect x="14" y="13" width="34" height="34" rx="9" fill="url(#grad1)"/>
+  <text x="31" y="35" font-size="16" text-anchor="middle" fill="white">⚡</text>
+  <text x="57" y="28" font-size="14" font-weight="700" fill="#f8fafc">Dook-Dak</text>
+  <text x="57" y="42" font-size="10" fill="#4b5563">뚝딱 배포 플랫폼</text>
+  <line x1="0" y1="58" x2="220" y2="58" stroke="rgba(255,255,255,0.06)"/>
+  <text x="16" y="84" font-size="10" font-weight="600" fill="#374151" letter-spacing="1">메인</text>
+  <text x="30" y="112" font-size="14" fill="#6b7280">📊</text>
+  <text x="52" y="112" font-size="12.5" font-weight="500" fill="#6b7280">통합 대시보드</text>
+  <!-- Deploy (active) -->
+  <rect x="8" y="120" width="204" height="34" rx="6" fill="rgba(99,102,241,0.18)"/>
+  <rect x="8" y="120" width="2" height="34" rx="1" fill="#6366f1"/>
+  <text x="30" y="142" font-size="14" fill="#a5b4fc">🚀</text>
+  <text x="52" y="142" font-size="12.5" font-weight="500" fill="#a5b4fc">배포 실행</text>
+  <text x="30" y="174" font-size="14" fill="#6b7280">📜</text>
+  <text x="52" y="174" font-size="12.5" font-weight="500" fill="#6b7280">실행 이력</text>
+  <text x="16" y="208" font-size="10" font-weight="600" fill="#374151" letter-spacing="1">워크플로우</text>
+  <text x="30" y="226" font-size="14" fill="#6b7280">⏳</text>
+  <text x="52" y="226" font-size="12.5" font-weight="500" fill="#6b7280">승인 대기</text>
+  <rect x="178" y="215" width="26" height="16" rx="8" fill="#ef4444"/>
+  <text x="191" y="227" font-size="10" font-weight="700" fill="white" text-anchor="middle">3</text>
+  <text x="30" y="256" font-size="14" fill="#6b7280">🔀</text>
+  <text x="52" y="256" font-size="12.5" font-weight="500" fill="#6b7280">워크플로우</text>
+  <text x="30" y="284" font-size="14" fill="#6b7280">🛒</text>
+  <text x="52" y="284" font-size="12.5" font-weight="500" fill="#6b7280">셀프서비스</text>
+  <text x="16" y="314" font-size="10" font-weight="600" fill="#374151" letter-spacing="1">인프라</text>
+  <text x="30" y="332" font-size="14" fill="#6b7280">🖥️</text>
+  <text x="52" y="332" font-size="12.5" font-weight="500" fill="#6b7280">인벤토리</text>
+  <text x="30" y="360" font-size="14" fill="#6b7280">📋</text>
+  <text x="52" y="360" font-size="12.5" font-weight="500" fill="#6b7280">플레이북</text>
+  <text x="30" y="388" font-size="14" fill="#6b7280">⚙️</text>
+  <text x="52" y="388" font-size="12.5" font-weight="500" fill="#6b7280">Worker Nodes</text>
+  <text x="16" y="418" font-size="10" font-weight="600" fill="#374151" letter-spacing="1">관리</text>
+  <text x="30" y="436" font-size="14" fill="#6b7280">🚨</text>
+  <text x="52" y="436" font-size="12.5" font-weight="500" fill="#6b7280">Alert Center</text>
+  <text x="30" y="464" font-size="14" fill="#6b7280">🔑</text>
+  <text x="52" y="464" font-size="12.5" font-weight="500" fill="#6b7280">RBAC</text>
+  <text x="30" y="492" font-size="14" fill="#6b7280">⚙️</text>
+  <text x="52" y="492" font-size="12.5" font-weight="500" fill="#6b7280">설정</text>
+  <rect x="0" y="540" width="220" height="40" fill="#0d1117"/>
+  <line x1="0" y1="540" x2="220" y2="540" stroke="rgba(255,255,255,0.06)"/>
+  <circle cx="26" cy="560" r="14" fill="url(#grad1)"/>
+  <text x="26" y="565" font-size="10" font-weight="700" fill="white" text-anchor="middle">AU</text>
+  <text x="48" y="555" font-size="11" font-weight="600" fill="#e2e8f0">admin.user</text>
+  <rect x="48" y="560" width="56" height="12" rx="3" fill="#1a56db"/>
+  <text x="76" y="570" font-size="8" font-weight="700" fill="white" text-anchor="middle">Keycloak SSO</text>
+
+  <!-- Topbar -->
+  <rect x="220" y="0" width="740" height="56" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="240" y="33" font-size="15" font-weight="700" fill="#0f172a">배포 실행</text>
+
+  <!-- Deploy Form Card -->
+  <rect x="236" y="72" width="700" height="482" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- Section 1: 플레이북 선택 -->
+  <text x="252" y="100" font-size="13" font-weight="700" fill="#0f172a">📦 플레이북 선택</text>
+  <line x1="236" y1="110" x2="936" y2="110" stroke="#f1f5f9" stroke-width="1"/>
+
+  <!-- Platform type selector pills -->
+  <text x="252" y="132" font-size="11" font-weight="600" fill="#475569">플랫폼</text>
+  <rect x="252" y="138" width="66" height="28" rx="7" fill="#6366f1"/>
+  <text x="285" y="157" font-size="12" font-weight="600" fill="white" text-anchor="middle">k8s</text>
+  <rect x="326" y="138" width="66" height="28" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="359" y="157" font-size="12" fill="#475569" text-anchor="middle">Redis</text>
+  <rect x="400" y="138" width="66" height="28" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="433" y="157" font-size="12" fill="#475569" text-anchor="middle">ES</text>
+  <rect x="474" y="138" width="66" height="28" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="507" y="157" font-size="12" fill="#475569" text-anchor="middle">MySQL</text>
+  <rect x="548" y="138" width="66" height="28" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="581" y="157" font-size="12" fill="#475569" text-anchor="middle">PostgreSQL</text>
+  <rect x="622" y="138" width="66" height="28" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="655" y="157" font-size="12" fill="#475569" text-anchor="middle">Hadoop</text>
+  <rect x="696" y="138" width="66" height="28" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="729" y="157" font-size="12" fill="#475569" text-anchor="middle">Envoy</text>
+
+  <!-- Action & Environment -->
+  <text x="252" y="188" font-size="11" font-weight="600" fill="#475569">액션</text>
+  <rect x="252" y="194" width="320" height="32" rx="7" fill="white" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="266" y="215" font-size="12.5" fill="#0f172a">rolling_update — 롤링 업데이트 (순차 재시작)</text>
+  <text x="558" y="215" font-size="12" fill="#94a3b8">▼</text>
+
+  <text x="590" y="188" font-size="11" font-weight="600" fill="#475569">환경</text>
+  <rect x="590" y="194" width="180" height="32" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="600" y="202" width="44" height="16" rx="4" fill="#dbeafe"/>
+  <text x="622" y="214" font-size="10" font-weight="700" fill="#1e40af" text-anchor="middle">Physical</text>
+  <text x="652" y="215" font-size="12.5" fill="#0f172a">DC1 — 물리 서버</text>
+  <text x="758" y="215" font-size="12" fill="#94a3b8">▼</text>
+
+  <!-- Section 2: 대상 선택 -->
+  <line x1="236" y1="244" x2="936" y2="244" stroke="#f1f5f9" stroke-width="1"/>
+  <text x="252" y="264" font-size="13" font-weight="700" fill="#0f172a">🖥️ 대상 호스트 선택</text>
+  <text x="780" y="264" font-size="12" fill="#6366f1">그룹 전체 선택</text>
+
+  <!-- Host group dropdown -->
+  <text x="252" y="286" font-size="11" font-weight="600" fill="#475569">인벤토리 그룹</text>
+  <rect x="252" y="292" width="320" height="32" rx="7" fill="white" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="266" y="313" font-size="12.5" fill="#0f172a">k8s-worker-dc1 (3 hosts)</text>
+  <text x="558" y="313" font-size="12" fill="#94a3b8">▼</text>
+
+  <!-- Host checkboxes -->
+  <rect x="252" y="334" width="660" height="28" rx="5" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="260" y="343" width="14" height="14" rx="3" fill="#6366f1"/>
+  <text x="264" y="354" font-size="10" font-weight="700" fill="white">✓</text>
+  <text x="282" y="354" font-size="12" fill="#0f172a">k8s-worker01-dc1</text>
+  <text x="410" y="354" font-size="11" fill="#94a3b8" font-family="monospace">172.30.10.11</text>
+  <rect x="490" y="341" width="50" height="16" rx="4" fill="#ecfdf5"/>
+  <text x="515" y="353" font-size="10" font-weight="600" fill="#065f46" text-anchor="middle">active</text>
+  <text x="560" y="354" font-size="11" fill="#6b7280">Rocky Linux 9.4</text>
+
+  <rect x="252" y="368" width="660" height="28" rx="5" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="260" y="377" width="14" height="14" rx="3" fill="#6366f1"/>
+  <text x="264" y="388" font-size="10" font-weight="700" fill="white">✓</text>
+  <text x="282" y="388" font-size="12" fill="#0f172a">k8s-worker02-dc1</text>
+  <text x="410" y="388" font-size="11" fill="#94a3b8" font-family="monospace">172.30.10.12</text>
+  <rect x="490" y="375" width="50" height="16" rx="4" fill="#ecfdf5"/>
+  <text x="515" y="387" font-size="10" font-weight="600" fill="#065f46" text-anchor="middle">active</text>
+  <text x="560" y="388" font-size="11" fill="#6b7280">Rocky Linux 9.4</text>
+
+  <rect x="252" y="402" width="660" height="28" rx="5" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="260" y="411" width="14" height="14" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+  <text x="282" y="422" font-size="12" fill="#0f172a">k8s-worker03-dc1</text>
+  <text x="410" y="422" font-size="11" fill="#94a3b8" font-family="monospace">172.30.10.13</text>
+  <rect x="490" y="409" width="50" height="16" rx="4" fill="#ecfdf5"/>
+  <text x="515" y="421" font-size="10" font-weight="600" fill="#065f46" text-anchor="middle">active</text>
+  <text x="560" y="422" font-size="11" fill="#6b7280">Rocky Linux 9.4</text>
+
+  <!-- Section 3: 실행 옵션 -->
+  <line x1="236" y1="444" x2="936" y2="444" stroke="#f1f5f9" stroke-width="1"/>
+  <text x="252" y="464" font-size="13" font-weight="700" fill="#0f172a">⚙️ 실행 옵션</text>
+
+  <text x="252" y="484" font-size="11" font-weight="600" fill="#475569">Forks</text>
+  <rect x="252" y="490" width="100" height="30" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="300" y="510" font-size="13" fill="#0f172a" text-anchor="middle">50</text>
+
+  <rect x="380" y="490" width="130" height="30" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="390" y="499" width="14" height="14" rx="3" fill="#6366f1"/>
+  <text x="394" y="510" font-size="10" font-weight="700" fill="white">✓</text>
+  <text x="412" y="510" font-size="12" fill="#0f172a">Dry Run 모드</text>
+
+  <rect x="530" y="490" width="150" height="30" rx="7" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="540" y="499" width="14" height="14" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+  <text x="562" y="510" font-size="12" fill="#0f172a">승인 필요</text>
+
+  <!-- Submit buttons -->
+  <rect x="252" y="530" width="130" height="38" rx="8" fill="#6366f1"/>
+  <text x="317" y="554" font-size="13" font-weight="600" fill="white" text-anchor="middle">🚀 배포 실행</text>
+  <rect x="394" y="530" width="100" height="38" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="444" y="554" font-size="13" font-weight="600" fill="#475569" text-anchor="middle">미리보기</text>
+
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+</svg>

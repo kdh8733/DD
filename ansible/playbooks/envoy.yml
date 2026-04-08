@@ -1,0 +1,177 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — envoy.yml
+#  Envoy Proxy 설정 배포 / 핫 리로드 / 업그레이드
+#
+#  Variables:
+#    envoy_action: deploy_config | hot_reload | upgrade | drain | status
+#    envoy_config_src: 로컬 설정 파일 경로
+#    envoy_version: (upgrade 시) 목표 버전 (예: v1.31.0)
+#    envoy_admin_port: (기본 9901)
+#    envoy_config_path: (기본 /etc/envoy/envoy.yaml)
+#    drain_time_seconds: (기본 30) drain 시간
+# ════════════════════════════════════════════
+- name: Envoy Proxy 관리
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  become: true
+  serial: "{{ serial_count | default('25%') }}"  # 기본: 25%씩 롤링
+
+  vars:
+    envoy_action: "{{ envoy_action | mandatory }}"
+    envoy_admin_port: "{{ envoy_admin_port | default(9901) }}"
+    envoy_config_path: "{{ envoy_config_path | default('/etc/envoy/envoy.yaml') }}"
+    envoy_service: "envoy"
+    drain_time_seconds: "{{ drain_time_seconds | default(30) }}"
+    envoy_version: "{{ envoy_version | default('latest') }}"
+
+  pre_tasks:
+    - name: 파라미터 검증
+      ansible.builtin.assert:
+        that:
+          - envoy_action in ['deploy_config', 'hot_reload', 'upgrade', 'drain', 'status', 'restart']
+        fail_msg: "유효하지 않은 envoy_action: {{ envoy_action }}"
+
+  tasks:
+    # ── Config 배포 + Hot Reload ───────────────
+    - name: 설정 파일 배포
+      block:
+        - name: 현재 설정 백업
+          ansible.builtin.copy:
+            src: "{{ envoy_config_path }}"
+            dest: "{{ envoy_config_path }}.bak.{{ ansible_date_time.epoch }}"
+            remote_src: true
+          ignore_errors: true
+
+        - name: 새 설정 파일 배포
+          ansible.builtin.copy:
+            src: "{{ envoy_config_src }}"
+            dest: "{{ envoy_config_path }}"
+            mode: '0644'
+            owner: envoy
+            group: envoy
+          when: envoy_config_src is defined
+
+        - name: 설정 파일 문법 검증
+          ansible.builtin.command: >
+            envoy --config-path {{ envoy_config_path }} --mode validate
+          register: config_validate
+          changed_when: false
+          failed_when: config_validate.rc != 0
+
+        - name: Hot Reload 실행 (HUP 시그널)
+          ansible.builtin.command: >
+            kill -HUP $(cat /var/run/envoy.pid)
+          register: hot_reload_result
+          changed_when: true
+          ignore_errors: false
+
+        - name: Hot Reload 완료 대기 (5초)
+          ansible.builtin.wait_for:
+            timeout: 5
+
+        - name: Admin API로 상태 확인
+          ansible.builtin.uri:
+            url: "http://{{ inventory_hostname }}:{{ envoy_admin_port }}/ready"
+            method: GET
+            status_code: 200
+          register: ready_check
+          retries: 10
+          delay: 2
+      when: envoy_action in ['deploy_config', 'hot_reload']
+
+    # ── Upgrade ──────────────────────────────
+    - name: Envoy 버전 업그레이드
+      block:
+        - name: 현재 버전 확인
+          ansible.builtin.command: envoy --version
+          register: current_version
+          changed_when: false
+
+        - name: 새 버전 다운로드
+          ansible.builtin.get_url:
+            url: "https://github.com/envoyproxy/envoy/releases/download/{{ envoy_version }}/envoy-{{ envoy_version }}-linux-x86_64"
+            dest: "/tmp/envoy-new"
+            mode: '0755'
+          when: envoy_version != 'latest'
+
+        - name: 이전 바이너리 백업
+          ansible.builtin.copy:
+            src: /usr/local/bin/envoy
+            dest: "/usr/local/bin/envoy.bak.{{ ansible_date_time.epoch }}"
+            remote_src: true
+
+        - name: 새 바이너리 배포
+          ansible.builtin.copy:
+            src: /tmp/envoy-new
+            dest: /usr/local/bin/envoy
+            mode: '0755'
+            remote_src: true
+
+        - name: 서비스 재시작
+          ansible.builtin.systemd:
+            name: "{{ envoy_service }}"
+            state: restarted
+
+        - name: 기동 대기
+          ansible.builtin.wait_for:
+            port: "{{ envoy_admin_port }}"
+            timeout: 60
+
+        - name: 업그레이드 버전 확인
+          ansible.builtin.command: envoy --version
+          register: new_version
+          changed_when: false
+
+        - name: 버전 정보 출력
+          ansible.builtin.debug:
+            msg: "{{ current_version.stdout }} → {{ new_version.stdout }}"
+      when: envoy_action == 'upgrade'
+
+    # ── Drain ────────────────────────────────
+    - name: Envoy 연결 드레인
+      block:
+        - name: 드레인 시작 (Admin API)
+          ansible.builtin.uri:
+            url: "http://{{ inventory_hostname }}:{{ envoy_admin_port }}/drain_listeners?inboundonly"
+            method: POST
+            status_code: 200
+
+        - name: 드레인 대기
+          ansible.builtin.wait_for:
+            timeout: "{{ drain_time_seconds }}"
+      when: envoy_action == 'drain'
+
+    # ── Status ────────────────────────────────
+    - name: Envoy 상태 확인
+      block:
+        - name: 서버 정보 조회
+          ansible.builtin.uri:
+            url: "http://{{ inventory_hostname }}:{{ envoy_admin_port }}/server_info"
+            method: GET
+            return_content: true
+          register: server_info
+
+        - name: 클러스터 상태 조회
+          ansible.builtin.uri:
+            url: "http://{{ inventory_hostname }}:{{ envoy_admin_port }}/clusters"
+            method: GET
+            return_content: true
+          register: clusters_info
+
+        - name: 상태 출력
+          ansible.builtin.debug:
+            msg:
+              - "Version: {{ (server_info.json.version | default('unknown')) }}"
+              - "State: {{ (server_info.json.state | default('unknown')) }}"
+              - "Uptime: {{ (server_info.json.uptime_current_epoch | default('unknown')) }}"
+      when: envoy_action == 'status'
+
+  post_tasks:
+    - name: 헬스체크 최종 확인
+      ansible.builtin.uri:
+        url: "http://{{ inventory_hostname }}:{{ envoy_admin_port }}/ready"
+        method: GET
+        status_code: 200
+      when: envoy_action not in ['drain', 'status']
+      changed_when: false

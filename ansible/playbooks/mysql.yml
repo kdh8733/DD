@@ -1,0 +1,177 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — mysql.yml
+#  MySQL 레플리케이션 설정/헬스체크/백업/Master 전환
+#
+#  Variables:
+#    mysql_action: install | replication_setup | failover | backup | health | config | upgrade | restart | status
+#    mysql_version: (기본 8.0)
+#    mysql_port: (기본 3306)
+#    mysql_replication_master: 새 master 호스트명 (failover 시)
+#    mysql_replication_user: (기본 replicator)
+#    mysql_replication_password: 레플리케이션 패스워드
+#    backup_dest: 백업 경로 (기본 /backup/mysql)
+#    backup_type: full | incremental (기본 full)
+# ════════════════════════════════════════════
+- name: MySQL 관리
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    mysql_action: "{{ mysql_action | mandatory }}"
+    mysql_port: "{{ mysql_port | default(3306) }}"
+    mysql_version: "{{ mysql_version | default('8.0') }}"
+    mysql_replication_user: "{{ mysql_replication_user | default('replicator') }}"
+    backup_dest: "{{ backup_dest | default('/backup/mysql') }}"
+    backup_type: "{{ backup_type | default('full') }}"
+    mysql_service: "mysqld"
+
+  pre_tasks:
+    - name: 파라미터 검증
+      ansible.builtin.assert:
+        that:
+          - mysql_action in ['install', 'replication_setup', 'failover', 'backup', 'health', 'config', 'upgrade', 'restart', 'status']
+        fail_msg: "유효하지 않은 mysql_action: {{ mysql_action }}"
+
+  tasks:
+    # ── Health Check ─────────────────────────
+    - name: MySQL 헬스체크
+      block:
+        - name: MySQL 프로세스 확인
+          ansible.builtin.command: mysqladmin ping
+          register: mysql_ping
+          changed_when: false
+          failed_when: mysql_ping.rc != 0
+
+        - name: 복제 상태 확인
+          community.mysql.mysql_replication:
+            mode: getreplica
+            login_port: "{{ mysql_port }}"
+          register: replica_status
+          ignore_errors: true
+
+        - name: 복제 지연 체크
+          ansible.builtin.debug:
+            msg: "복제 지연: {{ replica_status.Seconds_Behind_Master | default('N/A') }}초"
+          when: replica_status is not failed
+
+        - name: 복제 지연 경고
+          ansible.builtin.fail:
+            msg: "복제 지연이 임계치 초과: {{ replica_status.Seconds_Behind_Source }}초 > {{ max_lag | default(30) }}초"
+          when:
+            - replica_status is not failed
+            - replica_status.Seconds_Behind_Source is defined
+            - replica_status.Seconds_Behind_Source | int > max_lag | default(30) | int
+      when: mysql_action == 'health'
+
+    # ── Replication Setup ─────────────────────
+    - name: 레플리케이션 설정
+      block:
+        - name: 레플리케이션 사용자 생성 (Master에서 실행)
+          community.mysql.mysql_user:
+            name: "{{ mysql_replication_user }}"
+            password: "{{ mysql_replication_password }}"
+            host: "%"
+            priv: "*.*:REPLICATION SLAVE"
+            state: present
+          when: inventory_hostname == mysql_replication_master | default('')
+
+        - name: Slave 레플리케이션 시작
+          community.mysql.mysql_replication:
+            mode: changeprimary
+            primary_host: "{{ mysql_replication_master }}"
+            primary_port: "{{ mysql_port }}"
+            primary_user: "{{ mysql_replication_user }}"
+            primary_password: "{{ mysql_replication_password }}"
+            primary_auto_position: true
+          when: inventory_hostname != mysql_replication_master | default('')
+
+        - name: 레플리케이션 시작
+          community.mysql.mysql_replication:
+            mode: startreplica
+          when: inventory_hostname != mysql_replication_master | default('')
+      when: mysql_action == 'replication_setup'
+
+    # ── Failover ─────────────────────────────
+    - name: Master 전환 (Failover)
+      block:
+        - name: 현재 Slave를 새 Master로 승격
+          community.mysql.mysql_replication:
+            mode: stopreplica
+          when: inventory_hostname == mysql_replication_master | default('')
+
+        - name: Read-only 해제 (새 Master)
+          community.mysql.mysql_variables:
+            variable: read_only
+            value: 0
+          when: inventory_hostname == mysql_replication_master | default('')
+
+        - name: 기존 Master를 Slave로 설정
+          community.mysql.mysql_replication:
+            mode: changeprimary
+            primary_host: "{{ mysql_replication_master }}"
+            primary_user: "{{ mysql_replication_user }}"
+            primary_password: "{{ mysql_replication_password }}"
+            primary_auto_position: true
+          when: inventory_hostname != mysql_replication_master | default('')
+      when: mysql_action == 'failover'
+
+    # ── Backup ───────────────────────────────
+    - name: MySQL 백업
+      block:
+        - name: 백업 디렉토리 생성
+          ansible.builtin.file:
+            path: "{{ backup_dest }}/{{ ansible_date_time.date }}"
+            state: directory
+            mode: '0750'
+            owner: mysql
+
+        - name: Full 백업 실행 (mysqldump)
+          ansible.builtin.command: >
+            mysqldump
+            --all-databases
+            --single-transaction
+            --routines --triggers --events
+            --set-gtid-purged=ON
+            --compress
+            -u root
+            | gzip > {{ backup_dest }}/{{ ansible_date_time.date }}/full_{{ ansible_date_time.epoch }}.sql.gz
+          when: backup_type == 'full'
+          changed_when: true
+
+        - name: 백업 완료 확인
+          ansible.builtin.stat:
+            path: "{{ backup_dest }}/{{ ansible_date_time.date }}"
+          register: backup_check
+
+        - name: 백업 결과 출력
+          ansible.builtin.debug:
+            msg: "백업 완료: {{ backup_dest }}/{{ ansible_date_time.date }}"
+      when: mysql_action == 'backup'
+
+    # ── Restart ──────────────────────────────
+    - name: MySQL 재시작
+      ansible.builtin.systemd:
+        name: "{{ mysql_service }}"
+        state: restarted
+      when: mysql_action == 'restart'
+
+    # ── Status ────────────────────────────────
+    - name: MySQL 상태 확인
+      block:
+        - name: 프로세스 목록 조회
+          ansible.builtin.command: mysql -e "SHOW PROCESSLIST"
+          register: process_list
+          changed_when: false
+
+        - name: 복제 상태 조회
+          ansible.builtin.command: mysql -e "SHOW REPLICA STATUS\G"
+          register: replica_status_raw
+          changed_when: false
+          ignore_errors: true
+
+        - name: 상태 출력
+          ansible.builtin.debug:
+            msg: "{{ process_list.stdout_lines }}"
+      when: mysql_action == 'status'

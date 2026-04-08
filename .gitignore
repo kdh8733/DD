@@ -1,0 +1,64 @@
+# ── Environment ───────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Frontend ──────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+
+# ── Backend ───────────────────────────────
+backend/vendor/
+backend/tmp/
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+backend/server
+backend/worker
+
+# ── Go ─────────────────────────────────────
+*.test
+*.prof
+go.work
+
+# ── Ansible ───────────────────────────────
+ansible/__pycache__/
+ansible/*.retry
+ansible/.ansible/
+ansible/roles/*/tests/
+
+# ── Inventory Cache (CMDB sync 결과 - 커밋 안 함) ──
+data/inventory/*.json
+!data/inventory/.gitkeep
+
+# ── Ansible Runner Artifacts ──────────────
+artifacts/
+/var/lib/dookdak/
+
+# ── Temp Job Directories ──────────────────
+/tmp/jobs/
+
+# ── IDE ─────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Docker ─────────────────────────────────
+deploy/docker-compose.override.yml
+
+# ── Logs ─────────────────────────────────
+*.log
+logs/
+
+# ── Test coverage ─────────────────────────
+coverage/
+*.coverage
+*.coverprofile

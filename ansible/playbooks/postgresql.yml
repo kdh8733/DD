@@ -1,0 +1,149 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — postgresql.yml
+#  PostgreSQL HA 설정 및 유지관리
+#
+#  Variables:
+#    pg_action: install | replication | failover | vacuum | backup | config | restart | status
+#    pg_version: (기본 16)
+#    pg_port: (기본 5432)
+#    pg_primary_host: Primary 호스트명
+#    pg_replication_user: (기본 replicator)
+#    pg_replication_password: 레플리케이션 패스워드
+# ════════════════════════════════════════════
+- name: PostgreSQL 관리
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    pg_action: "{{ pg_action | mandatory }}"
+    pg_version: "{{ pg_version | default(16) }}"
+    pg_port: "{{ pg_port | default(5432) }}"
+    pg_data_dir: "/var/lib/pgsql/{{ pg_version }}/data"
+    pg_conf_dir: "/etc/postgresql/{{ pg_version }}/main"
+    pg_service: "postgresql-{{ pg_version }}"
+    pg_replication_user: "{{ pg_replication_user | default('replicator') }}"
+
+  tasks:
+    # ── 설치 ─────────────────────────────────
+    - name: PostgreSQL 설치
+      block:
+        - name: PostgreSQL 패키지 설치
+          ansible.builtin.package:
+            name:
+              - "postgresql{{ pg_version }}-server"
+              - "postgresql{{ pg_version }}-contrib"
+            state: present
+
+        - name: PostgreSQL 초기화
+          ansible.builtin.command: >
+            /usr/pgsql-{{ pg_version }}/bin/postgresql-{{ pg_version }}-setup initdb
+          changed_when: true
+          args:
+            creates: "{{ pg_data_dir }}/PG_VERSION"
+
+        - name: PostgreSQL 서비스 활성화
+          ansible.builtin.systemd:
+            name: "{{ pg_service }}"
+            enabled: true
+            state: started
+      when: pg_action == 'install'
+
+    # ── Streaming Replication 설정 ─────────────
+    - name: 스트리밍 레플리케이션 설정
+      block:
+        - name: 레플리케이션 사용자 생성 (Primary)
+          community.postgresql.postgresql_user:
+            name: "{{ pg_replication_user }}"
+            password: "{{ pg_replication_password }}"
+            role_attr_flags: REPLICATION,LOGIN
+          become_user: postgres
+          when: inventory_hostname == pg_primary_host | default('')
+
+        - name: pg_hba.conf 업데이트 (Primary)
+          community.postgresql.postgresql_pg_hba:
+            dest: "{{ pg_data_dir }}/pg_hba.conf"
+            contype: hostssl
+            databases: replication
+            users: "{{ pg_replication_user }}"
+            source: "0.0.0.0/0"
+            method: md5
+          notify: postgresql 재시작
+          when: inventory_hostname == pg_primary_host | default('')
+
+        - name: postgresql.conf 설정 (Primary)
+          community.postgresql.postgresql_set:
+            name: "{{ item.name }}"
+            value: "{{ item.value }}"
+          loop:
+            - { name: wal_level, value: replica }
+            - { name: max_wal_senders, value: "10" }
+            - { name: wal_keep_size, value: "1024" }
+            - { name: synchronous_commit, value: "local" }
+            - { name: hot_standby, value: "on" }
+          become_user: postgres
+          notify: postgresql 재시작
+          when: inventory_hostname == pg_primary_host | default('')
+
+        - name: Standby 초기화 (pg_basebackup)
+          ansible.builtin.command: >
+            pg_basebackup
+            -h {{ pg_primary_host }}
+            -U {{ pg_replication_user }}
+            -D {{ pg_data_dir }}
+            -P --wal-method=stream --checkpoint=fast
+          become_user: postgres
+          environment:
+            PGPASSWORD: "{{ pg_replication_password }}"
+          when: inventory_hostname != pg_primary_host | default('')
+          changed_when: true
+      when: pg_action == 'replication'
+
+    # ── Vacuum 실행 ───────────────────────────
+    - name: Vacuum 실행
+      community.postgresql.postgresql_query:
+        db: "{{ pg_database | default('all') }}"
+        query: VACUUM ANALYZE
+      become_user: postgres
+      when: pg_action == 'vacuum'
+
+    # ── Backup ───────────────────────────────
+    - name: pg_dump 백업
+      block:
+        - name: 백업 실행
+          ansible.builtin.command: >
+            pg_dumpall
+            --clean --if-exists
+            | gzip > /backup/postgresql/{{ ansible_date_time.epoch }}_full.sql.gz
+          become_user: postgres
+          changed_when: true
+      when: pg_action == 'backup'
+
+    # ── Status ────────────────────────────────
+    - name: PostgreSQL 상태 확인
+      block:
+        - name: 복제 상태 조회
+          community.postgresql.postgresql_query:
+            db: postgres
+            query: "SELECT * FROM pg_stat_replication"
+          become_user: postgres
+          register: replication_stat
+
+        - name: 상태 출력
+          ansible.builtin.debug:
+            msg: "복제 연결 수: {{ replication_stat.rowcount }}"
+      when: pg_action == 'status'
+
+    # ── Restart ──────────────────────────────
+    - name: PostgreSQL 재시작
+      ansible.builtin.systemd:
+        name: "{{ pg_service }}"
+        state: restarted
+      when: pg_action == 'restart'
+
+  handlers:
+    - name: postgresql 재시작
+      ansible.builtin.systemd:
+        name: "{{ pg_service }}"
+        state: restarted

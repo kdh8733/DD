@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dookdak-config
+  namespace: dookdak
+data:
+  API_PORT: "8080"
+  LOG_LEVEL: "info"
+  ENVIRONMENT: "production"
+  ANSIBLE_PLAYBOOK_DIR: "/opt/dookdak/playbooks"
+  ANSIBLE_INVENTORY_DIR: "/opt/dookdak/inventory"
+  ANSIBLE_RUNNER_ARTIFACTS_DIR: "/var/lib/dookdak/artifacts"
+  ANSIBLE_MAX_CONCURRENT_JOBS: "5"
+  ANSIBLE_DEFAULT_FORKS: "50"
+  CMDB_SYNC_INTERVAL_SECONDS: "300"
+  TEMPORAL_NAMESPACE: "dookdak"
+  TEMPORAL_TASK_QUEUE: "dookdak-workflows"
+  KEYCLOAK_REALM: "infra-platform"
+  KEYCLOAK_CLIENT_ID: "dookdak-app"

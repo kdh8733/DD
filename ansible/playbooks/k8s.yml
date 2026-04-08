@@ -1,0 +1,180 @@
+---
+# ════════════════════════════════════════════
+#  Dook-Dak Platform Playbook — k8s.yml
+#  Kubernetes 노드 관리
+#
+#  Variables:
+#    k8s_action: cordon | uncordon | drain | upgrade | join | leave
+#    k8s_version: (선택) 업그레이드 대상 버전 (예: 1.30.0)
+#    drain_timeout: (선택, 기본 300) drain 타임아웃(초)
+#    force_drain: (선택, 기본 false) DaemonSet 무시 여부
+#    join_token: (선택) 클러스터 join token (join 시 필요)
+#    join_ca_cert_hash: (선택) CA cert hash (join 시 필요)
+#    join_api_server: (선택) API 서버 주소 (join 시 필요)
+#
+#  예시:
+#    ansible-runner run /tmp/jobs/1 -p k8s.yml \
+#      --extra-vars "k8s_action=cordon"
+# ════════════════════════════════════════════
+- name: Kubernetes 노드 관리
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  become: true
+  serial: "{{ serial_count | default(1) }}"  # 기본: 1대씩 순차 처리
+
+  vars:
+    k8s_action: "{{ k8s_action | mandatory }}"
+    drain_timeout: "{{ drain_timeout | default(300) }}"
+    force_drain: "{{ force_drain | default(false) }}"
+    k8s_version: "{{ k8s_version | default('') }}"
+
+  pre_tasks:
+    - name: 파라미터 검증
+      ansible.builtin.assert:
+        that:
+          - k8s_action in ['cordon', 'uncordon', 'drain', 'upgrade', 'join', 'leave', 'label', 'status']
+        fail_msg: "k8s_action은 cordon/uncordon/drain/upgrade/join/leave/label/status 중 하나여야 합니다"
+      run_once: true
+
+    - name: kubectl 존재 확인
+      ansible.builtin.command: kubectl version --client
+      register: kubectl_check
+      failed_when: kubectl_check.rc != 0
+      changed_when: false
+      when: k8s_action != 'join'
+
+  tasks:
+    # ── Cordon (새 Pod 스케줄링 중지) ────────
+    - name: "노드 Cordon: {{ inventory_hostname }}"
+      ansible.builtin.command: "kubectl cordon {{ inventory_hostname }}"
+      delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+      register: cordon_result
+      when: k8s_action == 'cordon'
+      changed_when: "'already cordoned' not in cordon_result.stdout"
+
+    # ── Uncordon ──────────────────────────────
+    - name: "노드 Uncordon: {{ inventory_hostname }}"
+      ansible.builtin.command: "kubectl uncordon {{ inventory_hostname }}"
+      delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+      when: k8s_action == 'uncordon'
+      changed_when: true
+
+    # ── Drain (워크로드 이동) ─────────────────
+    - name: "노드 Drain: {{ inventory_hostname }}"
+      ansible.builtin.command: >
+        kubectl drain {{ inventory_hostname }}
+        --timeout={{ drain_timeout }}s
+        --ignore-daemonsets
+        {{ '--force' if force_drain else '' }}
+        --delete-emptydir-data
+      delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+      when: k8s_action == 'drain'
+      changed_when: true
+
+    # ── Upgrade ──────────────────────────────
+    - name: "kubeadm 업그레이드 준비"
+      block:
+        - name: kubeadm 버전 확인
+          ansible.builtin.command: "kubeadm version -o short"
+          register: kubeadm_version
+          changed_when: false
+
+        - name: 노드 Drain
+          ansible.builtin.command: >
+            kubectl drain {{ inventory_hostname }}
+            --ignore-daemonsets --delete-emptydir-data
+          delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+          changed_when: true
+
+        - name: kubeadm 업그레이드 실행
+          ansible.builtin.command: "kubeadm upgrade node"
+          changed_when: true
+          when: "'control-plane' not in group_names"
+
+        - name: kubelet 업그레이드
+          ansible.builtin.package:
+            name:
+              - "kubelet-{{ k8s_version }}"
+              - "kubectl-{{ k8s_version }}"
+            state: present
+            allow_downgrade: false
+          when: k8s_version != ''
+
+        - name: kubelet 재시작
+          ansible.builtin.systemd:
+            name: kubelet
+            state: restarted
+            daemon_reload: true
+
+        - name: 노드 Uncordon
+          ansible.builtin.command: "kubectl uncordon {{ inventory_hostname }}"
+          delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+          changed_when: true
+      when: k8s_action == 'upgrade'
+
+    # ── Join ──────────────────────────────────
+    - name: "노드 클러스터 Join"
+      block:
+        - name: kubeadm join 실행
+          ansible.builtin.command: >
+            kubeadm join {{ join_api_server }}
+            --token {{ join_token }}
+            --discovery-token-ca-cert-hash {{ join_ca_cert_hash }}
+          when:
+            - join_api_server is defined
+            - join_token is defined
+            - join_ca_cert_hash is defined
+          changed_when: true
+
+        - name: kubelet 활성화
+          ansible.builtin.systemd:
+            name: kubelet
+            enabled: true
+            state: started
+      when: k8s_action == 'join'
+
+    # ── Leave (노드 제거) ─────────────────────
+    - name: "노드 클러스터 제거"
+      block:
+        - name: 노드 Drain
+          ansible.builtin.command: >
+            kubectl drain {{ inventory_hostname }}
+            --ignore-daemonsets --delete-emptydir-data --force
+          delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+          changed_when: true
+
+        - name: 노드 삭제
+          ansible.builtin.command: "kubectl delete node {{ inventory_hostname }}"
+          delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+          changed_when: true
+
+        - name: kubeadm reset
+          ansible.builtin.command: kubeadm reset -f
+          changed_when: true
+      when: k8s_action == 'leave'
+
+    # ── Status 확인 ───────────────────────────
+    - name: "노드 상태 확인"
+      ansible.builtin.command: "kubectl get node {{ inventory_hostname }} -o wide"
+      delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+      register: node_status
+      changed_when: false
+      when: k8s_action == 'status'
+
+    - name: 노드 상태 출력
+      ansible.builtin.debug:
+        msg: "{{ node_status.stdout_lines }}"
+      when: k8s_action == 'status'
+
+  post_tasks:
+    - name: 노드 상태 최종 확인
+      ansible.builtin.command: "kubectl get node {{ inventory_hostname }}"
+      delegate_to: "{{ k8s_control_plane | default('localhost') }}"
+      register: final_status
+      changed_when: false
+      when: k8s_action not in ['join', 'status']
+
+    - name: 최종 상태 출력
+      ansible.builtin.debug:
+        msg: "{{ final_status.stdout }}"
+      when: k8s_action not in ['join', 'status']

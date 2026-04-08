@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dook-Dak — Ansible 통합 배포 플랫폼</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sidebar-bg: #0d1117;
+  --sidebar-border: rgba(255,255,255,0.06);
+  --sidebar-hover: rgba(255,255,255,0.05);
+  --sidebar-active-bg: rgba(99,102,241,0.18);
+  --sidebar-active-border: #6366f1;
+  --brand: #6366f1;
+  --brand-hover: #4f46e5;
+  --brand-light: rgba(99,102,241,0.08);
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --success-border: #6ee7b7;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --danger-border: #fca5a5;
+  --info: #3b82f6;
+  --info-bg: #eff6ff;
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --text-1: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 40px rgba(0,0,0,0.12);
+  --sidebar-w: 248px;
+  --topbar-h: 56px;
+  --r: 10px;
+  --r-sm: 7px;
+  --r-lg: 14px;
+}
+html { font-size: 14px; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; background: var(--bg); color: var(--text-1); display: flex; height: 100vh; overflow: hidden; line-height: 1.5; }
+
+/* ── Sidebar ── */
+.sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--sidebar-border); }
+.sidebar-logo { padding: 18px 16px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--sidebar-border); }
+.logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 8px rgba(99,102,241,0.4); flex-shrink: 0; }
+.logo-text { color: #f8fafc; font-weight: 700; font-size: 15px; letter-spacing: -0.02em; }
+.logo-sub { color: #4b5563; font-size: 10px; margin-top: 1px; font-weight: 500; }
+.sidebar-nav { flex: 1; padding: 10px 8px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #1e293b transparent; }
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+.nav-section { margin-bottom: 4px; }
+.nav-section-label { color: #374151; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 10px 5px; display: flex; align-items: center; gap: 6px; }
+.nav-section-label::after { content: ''; flex: 1; height: 1px; background: var(--sidebar-border); }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--r-sm); cursor: pointer; color: #6b7280; transition: all 0.12s; margin-bottom: 1px; position: relative; border-left: 2px solid transparent; }
+.nav-item:hover { background: var(--sidebar-hover); color: #d1d5db; }
+.nav-item.active { background: var(--sidebar-active-bg); color: #a5b4fc; border-left-color: var(--sidebar-active-border); }
+.nav-item .icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+.nav-item .label { font-size: 13px; font-weight: 500; flex: 1; }
+.nav-item .badge { background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+.nav-item .badge.warn { background: var(--warning); }
+.sidebar-footer { padding: 10px 8px; border-top: 1px solid var(--sidebar-border); }
+.user-card { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--r-sm); cursor: pointer; transition: background 0.12s; }
+.user-card:hover { background: var(--sidebar-hover); }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.user-name { color: #e2e8f0; font-size: 12px; font-weight: 600; }
+.user-sso { color: #4b5563; font-size: 10px; display: flex; align-items: center; gap: 4px; margin-top: 1px; }
+.sso-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); }
+.kc-badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; background: #1a56db; color: #fff; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.02em; }
+
+/* ── Main ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { height: var(--topbar-h); background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 12px; flex-shrink: 0; }
+.topbar-breadcrumb { display: flex; align-items: center; gap: 6px; }
+.topbar-title { font-size: 15px; font-weight: 700; color: var(--text-1); }
+.topbar-sub { color: var(--text-3); font-size: 12px; }
+.topbar-sep { color: var(--text-3); }
+.topbar-spacer { flex: 1; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.icon-btn { width: 34px; height: 34px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; color: var(--text-2); transition: all 0.12s; position: relative; }
+.icon-btn:hover { background: var(--bg); border-color: #d1d5db; }
+.notif-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); border: 2px solid var(--card); }
+.content { flex: 1; overflow-y: auto; padding: 22px 24px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Stat Cards ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow-xs); position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--brand); border-radius: var(--r) var(--r) 0 0; }
+.stat-card.green::before { background: var(--success); }
+.stat-card.orange::before { background: var(--warning); }
+.stat-card.red::before { background: var(--danger); }
+.stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.stat-label { font-size: 11px; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-icon-wrap { width: 36px; height: 36px; border-radius: 8px; background: var(--brand-light); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.stat-card.green .stat-icon-wrap { background: rgba(16,185,129,0.08); }
+.stat-card.orange .stat-icon-wrap { background: rgba(245,158,11,0.08); }
+.stat-card.red .stat-icon-wrap { background: rgba(239,68,68,0.08); }
+.stat-value { font-size: 26px; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; }
+.stat-delta { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.stat-delta.up { color: var(--success); }
+.stat-delta.down { color: var(--danger); }
+.stat-delta.neutral { color: var(--text-3); }
+
+/* ── Section Headers ── */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-title { font-size: 13px; font-weight: 700; color: var(--text-1); display: flex; align-items: center; gap: 7px; }
+.section-title .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+
+/* ── Cards ── */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow-xs); }
+.card-body { padding: 18px 20px; }
+.card + .card { margin-top: 14px; }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 9px 14px; font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); white-space: nowrap; background: #fafbfd; }
+th:first-child { border-radius: var(--r-sm) 0 0 0; }
+th:last-child { border-radius: 0 var(--r-sm) 0 0; }
+td { padding: 11px 14px; border-bottom: 1px solid var(--border-subtle); font-size: 12.5px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafbff; }
+.mono { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 11.5px; }
+
+/* ── Badges ── */
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.badge.success { background: var(--success-bg); color: #065f46; border: 1px solid var(--success-border); }
+.badge.success::before { background: var(--success); }
+.badge.failed { background: var(--danger-bg); color: #991b1b; border: 1px solid var(--danger-border); }
+.badge.failed::before { background: var(--danger); }
+.badge.running { background: var(--info-bg); color: #1e40af; border: 1px solid #93c5fd; }
+.badge.running::before { background: var(--info); animation: pulse 1.2s infinite; }
+.badge.pending { background: var(--warning-bg); color: #92400e; border: 1px solid #fde68a; }
+.badge.pending::before { background: var(--warning); }
+.badge.waiting { background: #f8fafc; color: #475569; border: 1px solid var(--border); }
+.badge.waiting::before { background: var(--text-3); }
+.badge.scheduled { background: #f5f3ff; color: #5b21b6; border: 1px solid #ddd6fe; }
+.badge.scheduled::before { background: #7c3aed; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.env-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.03em; }
+.env-badge.physical { background: #dbeafe; color: #1e40af; }
+.env-badge.openstack { background: #fef3c7; color: #92400e; }
+.env-badge.esxi { background: #ede9fe; color: #5b21b6; }
+.env-badge.aws { background: #fff7ed; color: #c2410c; }
+.env-badge.gcp { background: #dcfce7; color: #166534; }
+.env-badge.azure { background: #eff6ff; color: #1d4ed8; }
+.env-badge.onprem { background: #f1f5f9; color: #334155; }
+
+.platform-tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+.platform-tag.k8s { background: #dbeafe; color: #1d4ed8; }
+.platform-tag.redis { background: #fee2e2; color: #991b1b; }
+.platform-tag.es { background: #fef3c7; color: #b45309; }
+.platform-tag.mysql { background: #d1fae5; color: #065f46; }
+.platform-tag.pg { background: #e0e7ff; color: #3730a3; }
+.platform-tag.hadoop { background: #fce7f3; color: #9d174d; }
+.platform-tag.envoy { background: #ecfdf5; color: #065f46; }
+.platform-tag.os { background: #f1f5f9; color: #334155; }
+
+/* ── Buttons ── */
+.btn { padding: 7px 14px; border-radius: var(--r-sm); font-size: 12.5px; font-weight: 600; cursor: pointer; border: none; transition: all 0.12s; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.btn-primary { background: var(--brand); color: #fff; box-shadow: 0 1px 4px rgba(99,102,241,0.3); }
+.btn-primary:hover { background: var(--brand-hover); box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+.btn-ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger-border); }
+.btn-danger:hover { background: var(--danger-bg); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #059669; }
+.btn-lg { padding: 9px 20px; font-size: 13.5px; border-radius: 9px; }
+.btn-warning { background: var(--warning); color: #fff; }
+.btn-warning:hover { background: #d97706; }
+
+/* ── Forms ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 11.5px; font-weight: 600; color: var(--text-2); }
+select, input[type=text], textarea { padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 13px; background: var(--card); color: var(--text-1); transition: border 0.12s, box-shadow 0.12s; outline: none; font-family: inherit; }
+select:focus, input[type=text]:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+textarea { resize: vertical; min-height: 80px; }
+.checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12.5px; padding: 4px 0; }
+.checkbox-item input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--brand); cursor: pointer; flex-shrink: 0; }
+.form-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; grid-column: 1 / -1; }
+.search-input { padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 12.5px; width: 220px; background: var(--card); color: var(--text-1); outline: none; }
+.search-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.filter-select { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 12.5px; background: var(--card); color: var(--text-1); cursor: pointer; outline: none; }
+
+/* ── Progress ── */
+.progress-wrap { background: #e2e8f0; border-radius: 4px; height: 5px; overflow: hidden; }
+.progress-bar { height: 100%; border-radius: 4px; background: var(--brand); transition: width 0.5s; }
+.progress-bar.success { background: var(--success); }
+.progress-bar.warning { background: var(--warning); }
+.progress-bar.danger { background: var(--danger); }
+
+/* ── Env Tabs ── */
+.env-tabs { display: flex; gap: 4px; background: #f1f5f9; border: 1px solid var(--border); padding: 3px; border-radius: 9px; width: fit-content; }
+.env-tab { padding: 5px 12px; border-radius: 7px; font-size: 11.5px; font-weight: 600; cursor: pointer; color: var(--text-2); transition: all 0.12s; }
+.env-tab.active { background: var(--card); color: var(--text-1); box-shadow: var(--shadow-xs); }
+
+/* ── Log Viewer ── */
+.log-container { background: #0d1117; border-radius: 9px; padding: 14px 16px; font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace; font-size: 11.5px; line-height: 1.75; max-height: 340px; overflow-y: auto; border: 1px solid #21262d; }
+.log-container::-webkit-scrollbar { width: 6px; }
+.log-container::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+.log-line { display: flex; gap: 10px; margin-bottom: 1px; }
+.log-time { color: #4b5563; flex-shrink: 0; font-size: 10.5px; }
+.log-ok { color: #34d399; }
+.log-changed { color: #fbbf24; }
+.log-fail { color: #f87171; }
+.log-skip { color: #4b5563; }
+.log-info { color: #93c5fd; }
+.log-host { color: #c084fc; font-weight: 600; }
+.log-task { color: #60a5fa; }
+
+/* ── Workflow ── */
+.workflow-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow-xs); }
+.wf-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.wf-title { font-size: 13.5px; font-weight: 700; color: var(--text-1); }
+.wf-meta { font-size: 11.5px; color: var(--text-2); margin-top: 3px; display: flex; align-items: center; gap: 10px; }
+.wf-pipeline { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 4px 0 8px; }
+.wf-node { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 80px; }
+.wf-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid var(--border); background: var(--card); flex-shrink: 0; }
+.wf-circle.done { background: var(--success-bg); border-color: var(--success); }
+.wf-circle.running { background: var(--info-bg); border-color: var(--info); animation: ring-pulse 1.5s infinite; }
+.wf-circle.wait { background: var(--warning-bg); border-color: var(--warning); }
+.wf-circle.idle { background: #f8fafc; border-color: var(--border); }
+.wf-circle.fail { background: var(--danger-bg); border-color: var(--danger); }
+@keyframes ring-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0.3)} 50%{box-shadow:0 0 0 5px rgba(59,130,246,0)} }
+.wf-label { font-size: 10px; font-weight: 600; color: var(--text-2); text-align: center; line-height: 1.3; }
+.wf-arrow { font-size: 16px; color: var(--text-3); padding: 0 2px; padding-bottom: 22px; flex-shrink: 0; }
+.wf-status-bar { padding: 9px 13px; border-radius: 8px; font-size: 12px; font-weight: 500; margin-top: 6px; }
+.wf-status-bar.info { background: var(--info-bg); color: #1e40af; }
+.wf-status-bar.success { background: var(--success-bg); color: #065f46; }
+.wf-status-bar.danger { background: var(--danger-bg); color: #991b1b; }
+.wf-status-bar.warning { background: var(--warning-bg); color: #92400e; }
+
+/* ── Approval ── */
+.approval-card { border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; background: var(--card); margin-bottom: 12px; box-shadow: var(--shadow-xs); transition: box-shadow 0.15s; }
+.approval-card:hover { box-shadow: var(--shadow-md); }
+.approval-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.approval-title { font-size: 13.5px; font-weight: 700; }
+.approval-meta { display: flex; gap: 14px; font-size: 11.5px; color: var(--text-2); margin-bottom: 10px; flex-wrap: wrap; }
+.approval-meta span { display: flex; align-items: center; gap: 4px; }
+.approval-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.diff-preview { background: #0d1117; border-radius: 7px; padding: 10px 14px; font-family: monospace; font-size: 11.5px; margin-bottom: 10px; max-height: 90px; overflow: hidden; border: 1px solid #21262d; }
+.diff-add { color: #34d399; }
+.diff-remove { color: #f87171; }
+.diff-neutral { color: #6b7280; }
+
+/* ── Inventory ── */
+.inventory-filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+
+/* ── Modal ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--card); border-radius: var(--r-lg); padding: 22px 24px; width: 720px; max-width: calc(100vw - 48px); max-height: 82vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+.modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.modal-title { font-size: 15px; font-weight: 700; }
+.modal-close { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--text-2); }
+.modal-close:hover { background: var(--border); }
+
+/* ── Notification panel ── */
+.notif-panel { position: fixed; top: 0; right: -380px; width: 360px; height: 100vh; background: var(--card); border-left: 1px solid var(--border); z-index: 150; transition: right 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; }
+.notif-panel.open { right: 0; }
+.notif-panel-header { padding: 16px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.notif-panel-title { font-size: 14px; font-weight: 700; }
+.notif-list { flex: 1; overflow-y: auto; padding: 8px; }
+.notif-item { padding: 11px 12px; border-radius: 9px; margin-bottom: 6px; cursor: pointer; transition: background 0.1s; border: 1px solid transparent; }
+.notif-item:hover { background: var(--bg); border-color: var(--border); }
+.notif-item.unread { background: #fafbff; border-color: #e0e7ff; }
+.notif-icon { font-size: 18px; flex-shrink: 0; }
+.notif-text { font-size: 12.5px; color: var(--text-1); font-weight: 500; }
+.notif-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.notif-time { font-size: 10.5px; color: var(--text-3); margin-top: 4px; }
+
+/* ── Self-Service Catalog ── */
+.catalog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.catalog-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; box-shadow: var(--shadow-xs); transition: all 0.15s; cursor: pointer; }
+.catalog-card:hover { box-shadow: var(--shadow-md); border-color: #c7d2fe; transform: translateY(-1px); }
+.catalog-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; }
+.catalog-name { font-size: 13.5px; font-weight: 700; margin-bottom: 5px; }
+.catalog-desc { font-size: 12px; color: var(--text-2); line-height: 1.5; margin-bottom: 12px; }
+.catalog-meta { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-3); }
+.catalog-approval { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+.catalog-approval.required { background: var(--warning-bg); color: #92400e; }
+.catalog-approval.auto { background: var(--success-bg); color: #065f46; }
+
+/* ── Workers ── */
+.worker-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; box-shadow: var(--shadow-xs); }
+.worker-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 14px; }
+.worker-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.worker-name { font-size: 13px; font-weight: 700; font-family: monospace; }
+.worker-role { font-size: 10px; color: var(--text-3); font-weight: 600; background: var(--bg); padding: 2px 7px; border-radius: 4px; }
+.resource-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11.5px; }
+.resource-label { width: 50px; color: var(--text-2); font-weight: 600; }
+.resource-val { width: 36px; text-align: right; font-weight: 700; font-size: 11px; }
+.queue-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--info-bg); color: #1d4ed8; }
+
+/* ── Alerts ── */
+.alert-feed { display: flex; flex-direction: column; gap: 10px; }
+.alert-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start; box-shadow: var(--shadow-xs); }
+.alert-item.critical { border-left: 3px solid var(--danger); }
+.alert-item.warning { border-left: 3px solid var(--warning); }
+.alert-item.info { border-left: 3px solid var(--info); }
+.alert-severity { font-size: 10px; font-weight: 800; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
+.alert-severity.critical { background: var(--danger-bg); color: #991b1b; }
+.alert-severity.warning { background: var(--warning-bg); color: #92400e; }
+.alert-severity.info { background: var(--info-bg); color: #1e40af; }
+.alert-body { flex: 1; }
+.alert-title { font-size: 13px; font-weight: 700; }
+.alert-desc { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+.alert-time { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.alert-rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.alert-rule-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; }
+.rule-name { font-size: 12.5px; font-weight: 700; margin-bottom: 5px; }
+.rule-desc { font-size: 11.5px; color: var(--text-2); }
+.rule-channel { font-size: 11px; color: var(--text-3); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+
+/* ── RBAC ── */
+.rbac-matrix { overflow-x: auto; }
+.rbac-matrix table th { background: #fafbfd; }
+.rbac-matrix td { text-align: center; }
+.perm-check { font-size: 14px; }
+.role-badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 12px; font-size: 10.5px; font-weight: 700; }
+.role-badge.admin { background: #fef3c7; color: #92400e; }
+.role-badge.senior { background: #ede9fe; color: #5b21b6; }
+.role-badge.devops { background: var(--info-bg); color: #1e40af; }
+.role-badge.dev { background: var(--success-bg); color: #065f46; }
+.role-badge.viewer { background: #f1f5f9; color: #475569; }
+
+/* ── Misc ── */
+.avatar-sm { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+.flex-row { display: flex; align-items: center; gap: 6px; }
+.text-sm { font-size: 11.5px; color: var(--text-2); }
+.text-xs { font-size: 10.5px; color: var(--text-3); }
+.tag { display: inline-flex; align-items: center; padding: 2px 8px; background: #ede9fe; color: #5b21b6; border-radius: 4px; font-size: 10.5px; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.mt-4 { margin-top: 4px; }
+.mt-8 { margin-top: 8px; }
+.mt-14 { margin-top: 14px; }
+.mt-20 { margin-top: 20px; }
+.mb-14 { margin-bottom: 14px; }
+.info-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; background: var(--bg); border-radius: 8px; font-size: 12.5px; border: 1px solid var(--border-subtle); }
+.info-row + .info-row { margin-top: 8px; }
+.info-key { font-weight: 600; color: var(--text-2); }
+
+/* ── Keyboard shortcut hint ── */
+.kbd { display: inline-flex; align-items: center; padding: 1px 5px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 10px; font-family: monospace; color: var(--text-2); }
+
+/* ── Deploy page specific ── */
+.dry-run-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; background: var(--warning-bg); color: #92400e; border-radius: 7px; font-size: 12px; font-weight: 600; border: 1px solid #fde68a; }
+.deploy-actions { display: flex; align-items: center; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.server-target-preview { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px 13px; margin-top: 8px; }
+.server-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #ede9fe; color: #5b21b6; border-radius: 12px; font-size: 11px; font-weight: 600; margin: 2px; }
+.server-chip .remove { cursor: pointer; opacity: 0.6; font-size: 10px; }
+
+/* ── Settings page ── */
+.settings-section { margin-bottom: 22px; }
+.settings-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; }
+
+/* ── History timeline ── */
+.history-filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.failed-hosts-box { background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: 7px; padding: 9px 13px; margin-top: 6px; }
+.failed-hosts-box .title { font-size: 11px; font-weight: 700; color: #991b1b; margin-bottom: 5px; }
+.failed-host-chip { display: inline-flex; align-items: center; font-family: monospace; font-size: 10.5px; padding: 2px 7px; background: var(--danger-bg); border: 1px solid #fca5a5; border-radius: 4px; color: #991b1b; margin: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🚀</div>
+    <div>
+      <div class="logo-text">Dook-Dak</div>
+      <div class="logo-sub">v2.0 · prod cluster</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-section-label">메인</div>
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span><span class="label">대시보드</span>
+      </div>
+      <div class="nav-item" onclick="showPage('deploy', this)">
+        <span class="icon">🚀</span><span class="label">배포 실행</span>
+      </div>
+      <div class="nav-item" onclick="showPage('history', this)">
+        <span class="icon">📋</span><span class="label">실행 이력</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">워크플로우</div>
+      <div class="nav-item" onclick="showPage('approval', this)">
+        <span class="icon">✅</span><span class="label">승인 대기</span>
+        <span class="badge">3</span>
+      </div>
+      <div class="nav-item" onclick="showPage('workflow', this)">
+        <span class="icon">🔀</span><span class="label">워크플로우</span>
+      </div>
+      <div class="nav-item" onclick="showPage('selfservice', this)">
+        <span class="icon">🛒</span><span class="label">셀프서비스</span>
+        <span class="badge warn">NEW</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">인프라</div>
+      <div class="nav-item" onclick="showPage('inventory', this)">
+        <span class="icon">🖥️</span><span class="label">인벤토리</span>
+      </div>
+      <div class="nav-item" onclick="showPage('playbooks', this)">
+        <span class="icon">📦</span><span class="label">플레이북</span>
+      </div>
+      <div class="nav-item" onclick="showPage('workers', this)">
+        <span class="icon">⚙️</span><span class="label">워커 노드</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">관리</div>
+      <div class="nav-item" onclick="showPage('alerts', this)">
+        <span class="icon">🔔</span><span class="label">알림 센터</span>
+        <span class="badge">2</span>
+      </div>
+      <div class="nav-item" onclick="showPage('rbac', this)">
+        <span class="icon">🔐</span><span class="label">권한 관리 (RBAC)</span>
+      </div>
+      <div class="nav-item" onclick="showPage('settings', this)">
+        <span class="icon">⚙️</span><span class="label">설정</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">DK</div>
+      <div>
+        <div class="user-name">dh.kim</div>
+        <div class="user-sso"><span class="sso-dot"></span><span class="kc-badge">Keycloak SSO</span></div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">대시보드</div>
+      <div class="topbar-sub" id="topbar-sub">전체 배포 현황 · 실시간</div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-actions">
+      <div class="icon-btn" style="font-size:12px;width:auto;padding:0 10px;gap:4px" onclick="showPage('deploy', document.querySelectorAll('.nav-item')[1])">
+        ➕ <span style="font-size:12px;font-weight:600">새 배포</span>
+      </div>
+      <div class="icon-btn" onclick="toggleNotif()">🔔<div class="notif-dot"></div></div>
+      <div class="icon-btn" title="단축키: ? ">❓</div>
+      <div class="icon-btn">🌙</div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ══ PAGE: DASHBOARD ══ -->
+    <div id="page-dashboard" class="page active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-top">
+            <div class="stat-label">오늘 배포 횟수</div>
+            <div class="stat-icon-wrap">🚀</div>
+          </div>
+          <div class="stat-value">47</div>
+          <div class="stat-delta up">↑ 12% vs 어제</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-top">
+            <div class="stat-label">성공률 (30일)</div>
+            <div class="stat-icon-wrap">✅</div>
+          </div>
+          <div class="stat-value">96.8%</div>
+          <div class="stat-delta up">↑ 2.1%p 개선</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-top">
+            <div class="stat-label">승인 대기</div>
+            <div class="stat-icon-wrap">⏳</div>
+          </div>
+          <div class="stat-value">3</div>
+          <div class="stat-delta neutral">최장 대기 2시간</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top">
+            <div class="stat-label">관리 서버</div>
+            <div class="stat-icon-wrap">🖥️</div>
+          </div>
+          <div class="stat-value">10,542</div>
+          <div class="stat-delta up">↑ 38 신규 추가</div>
+        </div>
+      </div>
+
+      <!-- 인프라 플랫폼 현황 -->
+      <div class="three-col mb-14">
+        <div class="card">
+          <div class="card-body" style="padding:14px 16px">
+            <div class="text-xs" style="margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Ansible Workers</div>
+            <div class="flex-row">
+              <span style="font-size:22px;font-weight:800;color:var(--success)">4</span>
+              <span class="text-sm">/ 4 정상</span>
+            </div>
+            <div class="progress-wrap mt-4"><div class="progress-bar success" style="width:100%"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:14px 16px">
+            <div class="text-xs" style="margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">MTTR (평균 복구 시간)</div>
+            <div class="flex-row">
+              <span style="font-size:22px;font-weight:800;color:var(--brand)">4m 12s</span>
+            </div>
+            <div class="text-xs mt-4">↓ 38초 개선 (이번 주)</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:14px 16px">
+            <div class="text-xs" style="margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">대기 중인 Job</div>
+            <div class="flex-row">
+              <span style="font-size:22px;font-weight:800;color:var(--warning)">23</span>
+              <span class="text-sm">큐 잔량</span>
+            </div>
+            <div class="progress-wrap mt-4"><div class="progress-bar warning" style="width:46%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 현재 실행 중 -->
+      <div class="section-header">
+        <div class="section-title"><span class="dot" style="background:var(--info);animation:pulse 1.2s infinite"></span> 현재 실행 중</div>
+        <span class="badge running">2개 진행 중</span>
+      </div>
+      <div class="card mb-14">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Job ID</th><th>플레이북</th><th>플랫폼</th><th>환경</th><th>실행자</th><th>진행률</th><th>경과</th><th>액션</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2041</span></td>
+                  <td><strong>post-bootstrap.yml</strong></td>
+                  <td><span class="platform-tag os">OS</span></td>
+                  <td><span class="env-badge physical">Physical</span></td>
+                  <td><div class="flex-row"><div class="avatar-sm">JH</div> jh.lee</div></td>
+                  <td style="min-width:180px">
+                    <div class="text-xs mb-4">342 / 500 hosts · 68%</div>
+                    <div class="progress-wrap" style="width:160px"><div class="progress-bar" style="width:68%"></div></div>
+                  </td>
+                  <td class="text-sm">12분 38초</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost" onclick="openLogModal()">로그</button><button class="btn btn-danger">중단</button></div></td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2040</span></td>
+                  <td><strong>redis.yml</strong></td>
+                  <td><span class="platform-tag redis">Redis</span></td>
+                  <td><span class="env-badge aws">AWS</span></td>
+                  <td><div class="flex-row"><div class="avatar-sm">DK</div> dh.kim</div></td>
+                  <td style="min-width:180px">
+                    <div class="text-xs mb-4">89 / 120 hosts · 74%</div>
+                    <div class="progress-wrap" style="width:160px"><div class="progress-bar" style="width:74%"></div></div>
+                  </td>
+                  <td class="text-sm">5분 12초</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost" onclick="openLogModal()">로그</button><button class="btn btn-danger">중단</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 최근 실행 이력 -->
+      <div class="section-header">
+        <div class="section-title">최근 실행 이력</div>
+        <button class="btn btn-ghost" onclick="showPage('history', document.querySelectorAll('.nav-item')[2])">전체 보기 →</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Job ID</th><th>플레이북</th><th>플랫폼</th><th>환경</th><th>대상 그룹</th><th>실행자</th><th>상태</th><th>소요</th><th>시각</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2039</span></td>
+                  <td>settings-conf.yml</td>
+                  <td><span class="platform-tag os">OS</span></td>
+                  <td><span class="env-badge openstack">OpenStack</span></td>
+                  <td>k8s-slave-dc2</td>
+                  <td><div class="flex-row"><div class="avatar-sm">SY</div> sy.park</div></td>
+                  <td><span class="badge success">성공</span></td>
+                  <td class="text-sm">3m 24s</td>
+                  <td class="text-sm">14:22</td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2038</span></td>
+                  <td>elasticsearch.yml</td>
+                  <td><span class="platform-tag es">ES</span></td>
+                  <td><span class="env-badge esxi">ESXi</span></td>
+                  <td>es-data-dc1</td>
+                  <td><div class="flex-row"><div class="avatar-sm">JH</div> jh.lee</div></td>
+                  <td><span class="badge success">성공</span></td>
+                  <td class="text-sm">7m 01s</td>
+                  <td class="text-sm">13:55</td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2037</span></td>
+                  <td>mysql.yml</td>
+                  <td><span class="platform-tag mysql">MySQL</span></td>
+                  <td><span class="env-badge gcp">GCP</span></td>
+                  <td>db-mysql-primary</td>
+                  <td><div class="flex-row"><div class="avatar-sm">DK</div> dh.kim</div></td>
+                  <td><span class="badge failed">실패</span></td>
+                  <td class="text-sm">1m 44s</td>
+                  <td class="text-sm">13:31</td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2036</span></td>
+                  <td>k8s.yml</td>
+                  <td><span class="platform-tag k8s">K8s</span></td>
+                  <td><span class="env-badge physical">Physical</span></td>
+                  <td>k8s-worker-dc1</td>
+                  <td><div class="flex-row"><div class="avatar-sm">WJ</div> wj.choi</div></td>
+                  <td><span class="badge success">성공</span></td>
+                  <td class="text-sm">2m 12s</td>
+                  <td class="text-sm">12:48</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: DEPLOY ══ -->
+    <div id="page-deploy" class="page">
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label>플레이북 선택</label>
+                  <select>
+                    <optgroup label="── 플랫폼 레벨">
+                      <option>k8s.yml — Kubernetes 노드 관리 (cordon/drain/upgrade)</option>
+                      <option>redis.yml — Redis Cluster 관리 (failover/scale/복제)</option>
+                      <option>elasticsearch.yml — ES Cluster 롤링 업데이트/재시작</option>
+                      <option>mysql.yml — MySQL 레플리케이션 설정/헬스체크/백업</option>
+                      <option>postgresql.yml — PostgreSQL HA 설정 및 유지관리</option>
+                      <option>impala.yml — Impala 서비스 관리 (재시작/메타데이터)</option>
+                      <option>hadoop.yml — HDFS/YARN 관리 (밸런서/HA)</option>
+                      <option>envoy.yml — Envoy Proxy 설정 배포/핫 리로드</option>
+                    </optgroup>
+                    <optgroup label="── 공통">
+                      <option selected>post-bootstrap.yml — OS 설치 후 초기 설정</option>
+                      <option>file-serving.yml — rootentry 파일 배포</option>
+                      <option>settings-conf.yml — Agent 설정 배포</option>
+                      <option>init-bash.yml — init.bash 원격 실행</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>대상 환경</label>
+                  <select>
+                    <option>전체 환경</option>
+                    <option>Physical (DC1)</option>
+                    <option>Physical (DC2)</option>
+                    <option>OpenStack</option>
+                    <option>ESXi</option>
+                    <option>AWS (ap-northeast-2)</option>
+                    <option>AWS (us-east-1)</option>
+                    <option>GCP (asia-northeast3)</option>
+                    <option>Azure</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>대상 그룹 / 인벤토리</label>
+                  <select>
+                    <option>그룹 선택...</option>
+                    <option>k8s-master-dc1 (6 hosts)</option>
+                    <option>k8s-worker-dc1 (320 hosts)</option>
+                    <option>k8s-worker-dc2 (318 hosts)</option>
+                    <option>db-mysql-primary (4 hosts)</option>
+                    <option>db-mysql-replica (12 hosts)</option>
+                    <option>redis-cluster-dc1 (9 hosts)</option>
+                    <option>es-master-dc1 (3 hosts)</option>
+                    <option>es-data-dc1 (24 hosts)</option>
+                    <option>hadoop-namenode (2 hosts)</option>
+                    <option>hadoop-datanode (48 hosts)</option>
+                    <option>infra-metrics (8 hosts)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>동시 실행 수 (forks)</label>
+                  <input type="text" value="50" />
+                </div>
+
+                <div class="form-group full">
+                  <label>특정 서버 직접 지정 (hostname, 쉼표 구분 — 선택)</label>
+                  <input type="text" placeholder="예: redis01-dc1, redis02-dc1, redis03-dc1" />
+                  <div class="server-target-preview">
+                    <span class="text-xs" style="display:block;margin-bottom:4px">미리보기 — 대상 서버</span>
+                    <span class="server-chip">redis01-dc1 <span class="remove">✕</span></span>
+                    <span class="server-chip">redis02-dc1 <span class="remove">✕</span></span>
+                    <span class="server-chip">redis03-dc1 <span class="remove">✕</span></span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>실행 태그 (Ansible Tags)</label>
+                  <input type="text" placeholder="예: install, config (쉼표 구분)" />
+                </div>
+
+                <div class="form-group">
+                  <label>Skip 태그</label>
+                  <input type="text" placeholder="예: restart (건너뛸 태그)" />
+                </div>
+
+                <div class="form-group full">
+                  <label>Extra Variables (YAML 형식)</label>
+                  <textarea placeholder="deploy_version: &quot;2.1.0&quot;&#10;restart_service: true&#10;target_env: production"></textarea>
+                </div>
+
+                <hr class="form-divider">
+
+                <div class="form-group full">
+                  <label>배포 옵션</label>
+                  <div style="display:flex;flex-direction:column;gap:2px">
+                    <label class="checkbox-item"><input type="checkbox"> <span>Dry-run 모드 (변경사항 시뮬레이션만, 실제 변경 없음)</span></label>
+                    <label class="checkbox-item"><input type="checkbox" checked> <span>완료/실패 시 Slack 알림 발송</span></label>
+                    <label class="checkbox-item"><input type="checkbox"> <span>승인 프로세스 활성화 (Approval Workflow)</span></label>
+                    <label class="checkbox-item"><input type="checkbox"> <span>DC1 완료 검증 후 DC2 순차 배포</span></label>
+                    <label class="checkbox-item"><input type="checkbox"> <span>실패 시 자동 롤백 실행</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="deploy-actions">
+                <button class="btn btn-primary btn-lg" onclick="openLogModal()">🚀 배포 실행</button>
+                <button class="btn btn-warning btn-lg">🔍 Dry-run</button>
+                <button class="btn btn-ghost btn-lg">취소</button>
+                <span class="dry-run-badge">⚠️ 운영 환경 대상</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="card-body">
+              <div class="section-title mb-14">📦 플레이북 정보</div>
+              <div style="font-size:12.5px;color:var(--text-2);line-height:2">
+                <div><strong style="color:var(--text-1)">이름</strong>: post-bootstrap.yml</div>
+                <div><strong style="color:var(--text-1)">플랫폼</strong>: <span class="platform-tag os">OS</span></div>
+                <div><strong style="color:var(--text-1)">설명</strong>: OS 설치 후 salt minion 설정, 서비스 활성화, 파일 배포</div>
+                <div><strong style="color:var(--text-1)">최근 수정</strong>: 2시간 전 · dh.kim</div>
+                <div><strong style="color:var(--text-1)">GitHub</strong>: <span style="color:var(--brand);cursor:pointer">infra-playbooks/post-bootstrap.yml ↗</span></div>
+                <div style="margin-top:6px"><strong style="color:var(--text-1)">태그</strong></div>
+                <div><span class="tag">bootstrap</span><span class="tag">salt</span><span class="tag">rocky9</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="section-title mb-14">📈 최근 30회 실행 통계</div>
+              <div class="text-xs" style="margin-bottom:5px">성공률 93.3%</div>
+              <div class="progress-wrap"><div class="progress-bar success" style="width:93.3%"></div></div>
+              <div class="three-col mt-14" style="text-align:center">
+                <div><div style="font-size:22px;font-weight:800;color:var(--success)">28</div><div class="text-xs">성공</div></div>
+                <div><div style="font-size:22px;font-weight:800;color:var(--danger)">2</div><div class="text-xs">실패</div></div>
+                <div><div style="font-size:22px;font-weight:800;color:var(--text-2)">4m12s</div><div class="text-xs">평균 시간</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="section-title mb-14">⚡ 실패 알림 설정</div>
+              <div style="font-size:12px;color:var(--text-2);line-height:2">
+                <div>🔴 실패 시 → <code style="font-size:11px;background:var(--bg);padding:1px 5px;border-radius:4px">#infra-deploy-alert</code></div>
+                <div>✅ 성공 시 → <code style="font-size:11px;background:var(--bg);padding:1px 5px;border-radius:4px">#infra-deploy-success</code></div>
+                <div>⚠️ 연속 5회 실패 → PagerDuty 에스컬레이션</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: HISTORY ══ -->
+    <div id="page-history" class="page">
+      <div class="history-filters">
+        <input type="text" class="search-input" placeholder="🔍  Job ID, 플레이북, 실행자, 서버 검색...">
+        <select class="filter-select"><option>전체 플랫폼</option><option>k8s</option><option>Redis</option><option>Elasticsearch</option><option>MySQL</option><option>PostgreSQL</option><option>Hadoop</option><option>Envoy</option><option>OS</option></select>
+        <select class="filter-select"><option>전체 환경</option><option>Physical</option><option>OpenStack</option><option>ESXi</option><option>AWS</option><option>GCP</option><option>Azure</option></select>
+        <select class="filter-select"><option>전체 상태</option><option>성공</option><option>실패</option><option>실행 중</option><option>중단됨</option></select>
+        <select class="filter-select"><option>전체 기간</option><option>오늘</option><option>이번 주</option><option>이번 달</option><option>직접 입력</option></select>
+        <button class="btn btn-ghost">📥 CSV 내보내기</button>
+        <button class="btn btn-ghost">📊 리포트 생성</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Job ID</th><th>플레이북</th><th>플랫폼</th><th>환경</th><th>대상 그룹</th><th>서버 수</th><th>실행자</th><th>상태</th><th>소요</th><th>시각</th><th></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2041</span></td>
+                  <td>post-bootstrap.yml</td>
+                  <td><span class="platform-tag os">OS</span></td>
+                  <td><span class="env-badge physical">Physical</span></td>
+                  <td>k8s-worker-dc1</td>
+                  <td>500</td>
+                  <td><div class="flex-row"><div class="avatar-sm">JH</div> jh.lee</div></td>
+                  <td><span class="badge running">실행 중</span></td>
+                  <td>진행 중</td>
+                  <td class="text-sm">15:04</td>
+                  <td><button class="btn btn-ghost" onclick="openLogModal()">로그</button></td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2040</span></td>
+                  <td>redis.yml</td>
+                  <td><span class="platform-tag redis">Redis</span></td>
+                  <td><span class="env-badge aws">AWS</span></td>
+                  <td>redis-cluster-prod</td>
+                  <td>120</td>
+                  <td><div class="flex-row"><div class="avatar-sm">DK</div> dh.kim</div></td>
+                  <td><span class="badge running">실행 중</span></td>
+                  <td>진행 중</td>
+                  <td class="text-sm">14:58</td>
+                  <td><button class="btn btn-ghost" onclick="openLogModal()">로그</button></td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2039</span></td>
+                  <td>elasticsearch.yml</td>
+                  <td><span class="platform-tag es">ES</span></td>
+                  <td><span class="env-badge esxi">ESXi</span></td>
+                  <td>es-data-dc1</td>
+                  <td>24</td>
+                  <td><div class="flex-row"><div class="avatar-sm">SY</div> sy.park</div></td>
+                  <td><span class="badge success">성공</span></td>
+                  <td>3m 24s</td>
+                  <td class="text-sm">14:22</td>
+                  <td><button class="btn btn-ghost" onclick="openLogModal()">로그</button></td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2038</span></td>
+                  <td>k8s.yml</td>
+                  <td><span class="platform-tag k8s">K8s</span></td>
+                  <td><span class="env-badge physical">Physical</span></td>
+                  <td>k8s-worker-dc2</td>
+                  <td>318</td>
+                  <td><div class="flex-row"><div class="avatar-sm">JH</div> jh.lee</div></td>
+                  <td><span class="badge success">성공</span></td>
+                  <td>7m 01s</td>
+                  <td class="text-sm">13:55</td>
+                  <td><button class="btn btn-ghost" onclick="openLogModal()">로그</button></td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2037</span></td>
+                  <td>mysql.yml</td>
+                  <td><span class="platform-tag mysql">MySQL</span></td>
+                  <td><span class="env-badge gcp">GCP</span></td>
+                  <td>db-mysql-primary</td>
+                  <td>4</td>
+                  <td><div class="flex-row"><div class="avatar-sm">DK</div> dh.kim</div></td>
+                  <td><span class="badge failed">실패</span></td>
+                  <td>1m 44s</td>
+                  <td class="text-sm">13:31</td>
+                  <td>
+                    <div class="flex-row">
+                      <button class="btn btn-ghost" onclick="openLogModal()">로그</button>
+                      <button class="btn btn-danger">재실행</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2036</span></td>
+                  <td>hadoop.yml</td>
+                  <td><span class="platform-tag hadoop">Hadoop</span></td>
+                  <td><span class="env-badge physical">Physical</span></td>
+                  <td>hadoop-datanode-dc1</td>
+                  <td>48</td>
+                  <td><div class="flex-row"><div class="avatar-sm">WJ</div> wj.choi</div></td>
+                  <td><span class="badge success">성공</span></td>
+                  <td>2m 12s</td>
+                  <td class="text-sm">12:48</td>
+                  <td><button class="btn btn-ghost" onclick="openLogModal()">로그</button></td>
+                </tr>
+                <tr>
+                  <td><span class="mono" style="color:var(--brand)">#2035</span></td>
+                  <td>envoy.yml</td>
+                  <td><span class="platform-tag envoy">Envoy</span></td>
+                  <td><span class="env-badge openstack">OpenStack</span></td>
+                  <td>envoy-edge-dc1</td>
+                  <td>16</td>
+                  <td><div class="flex-row"><div class="avatar-sm">SY</div> sy.park</div></td>
+                  <td><span class="badge success">성공</span></td>
+                  <td>58s</td>
+                  <td class="text-sm">12:10</td>
+                  <td><button class="btn btn-ghost" onclick="openLogModal()">로그</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 실패 분석 패널 -->
+      <div class="card mt-14">
+        <div class="card-body">
+          <div class="section-title mb-14">🔍 실패 분석 — #2037 mysql.yml</div>
+          <div class="failed-hosts-box">
+            <div class="title">실패 서버 목록 (4/4 실패)</div>
+            <span class="failed-host-chip">db-mysql01-gcp</span>
+            <span class="failed-host-chip">db-mysql02-gcp</span>
+            <span class="failed-host-chip">db-mysql03-gcp</span>
+            <span class="failed-host-chip">db-mysql04-gcp</span>
+          </div>
+          <div style="margin-top:10px;font-size:12.5px;color:var(--text-2);line-height:1.8">
+            <strong style="color:var(--text-1)">오류 메시지:</strong> <code style="font-size:11.5px;background:var(--danger-bg);padding:2px 6px;border-radius:4px;color:#991b1b">UNREACHABLE: Connection timed out (SSH 포트 22 접근 불가)</code>
+          </div>
+          <div style="margin-top:8px;font-size:12px;color:var(--text-2)">원인 추정: GCP 방화벽 규칙 변경으로 SSH 접근 차단됨. 방화벽 규칙 확인 후 재실행 필요.</div>
+          <div class="flex-row mt-14">
+            <button class="btn btn-ghost">📋 전체 로그 보기</button>
+            <button class="btn btn-danger">🔄 실패 서버만 재실행</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: APPROVAL ══ -->
+    <div id="page-approval" class="page">
+      <div style="font-size:12.5px;color:var(--text-2);margin-bottom:16px;padding:10px 14px;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:var(--r-sm)">
+        ℹ️ 아래 항목은 <strong>운영 서버 변경</strong> 또는 <strong>중요 플랫폼 작업</strong>으로 담당자 승인이 필요합니다. 승인 또는 거절 즉시 처리됩니다.
+      </div>
+
+      <div class="approval-card">
+        <div class="approval-header">
+          <div>
+            <div class="approval-title">#WF-204 · settings-conf.yml → k8s-slave (DC1 → DC2 순차)</div>
+            <div class="approval-meta">
+              <span>🕐 2시간 전 요청</span>
+              <span>👤 jh.lee</span>
+              <span>🖥️ 638 hosts</span>
+              <span><span class="env-badge physical">Physical</span></span>
+              <span><span class="platform-tag os">OS</span></span>
+            </div>
+          </div>
+          <span class="badge waiting">승인 대기</span>
+        </div>
+        <div class="diff-preview">
+          <div class="diff-remove">- master: ansible01.internal</div>
+          <div class="diff-add">+ master: ansible02.internal</div>
+          <div class="diff-add">+ master: ansible03.internal</div>
+          <div class="diff-neutral">  log_level: warning</div>
+          <div class="diff-neutral">  hash_type: sha256</div>
+        </div>
+        <div class="approval-actions">
+          <button class="btn btn-success btn-lg">✅ 승인</button>
+          <button class="btn btn-danger btn-lg">❌ 거절</button>
+          <button class="btn btn-ghost" onclick="openLogModal()">Dry-run 결과 보기</button>
+          <button class="btn btn-ghost">GitHub PR ↗</button>
+          <button class="btn btn-ghost">💬 코멘트 추가</button>
+        </div>
+      </div>
+
+      <div class="approval-card">
+        <div class="approval-header">
+          <div>
+            <div class="approval-title">#WF-203 · redis.yml → redis-cluster-prod (Failover + 업그레이드)</div>
+            <div class="approval-meta">
+              <span>🕐 45분 전 요청</span>
+              <span>👤 sy.park</span>
+              <span>🖥️ 9 hosts</span>
+              <span><span class="env-badge openstack">OpenStack</span></span>
+              <span><span class="platform-tag redis">Redis</span></span>
+            </div>
+          </div>
+          <span class="badge waiting">승인 대기</span>
+        </div>
+        <div class="diff-preview">
+          <div class="diff-neutral"># Redis Cluster 업그레이드 7.0 → 7.2</div>
+          <div class="diff-remove">- redis_version: "7.0.15"</div>
+          <div class="diff-add">+ redis_version: "7.2.4"</div>
+          <div class="diff-add">+ cluster_announce_hostname: true</div>
+        </div>
+        <div class="approval-actions">
+          <button class="btn btn-success btn-lg">✅ 승인</button>
+          <button class="btn btn-danger btn-lg">❌ 거절</button>
+          <button class="btn btn-ghost" onclick="openLogModal()">Dry-run 결과 보기</button>
+          <button class="btn btn-ghost">GitHub PR ↗</button>
+        </div>
+      </div>
+
+      <div class="approval-card">
+        <div class="approval-header">
+          <div>
+            <div class="approval-title">#WF-202 · mysql.yml → db-mysql-primary (레플리케이션 재설정)</div>
+            <div class="approval-meta">
+              <span>🕐 18분 전 요청</span>
+              <span>👤 dh.kim</span>
+              <span>🖥️ 4 hosts</span>
+              <span><span class="env-badge gcp">GCP</span></span>
+              <span><span class="platform-tag mysql">MySQL</span></span>
+            </div>
+          </div>
+          <span class="badge waiting">승인 대기</span>
+        </div>
+        <div class="diff-preview">
+          <div class="diff-neutral"># MySQL 레플리케이션 master 교체</div>
+          <div class="diff-remove">- mysql_replication_master: db-mysql01-gcp</div>
+          <div class="diff-add">+ mysql_replication_master: db-mysql02-gcp</div>
+          <div class="diff-neutral">  mysql_replication_role: slave</div>
+        </div>
+        <div class="approval-actions">
+          <button class="btn btn-success btn-lg">✅ 승인</button>
+          <button class="btn btn-danger btn-lg">❌ 거절</button>
+          <button class="btn btn-ghost" onclick="openLogModal()">Dry-run 결과 보기</button>
+          <button class="btn btn-ghost">GitHub PR ↗</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: WORKFLOW ══ -->
+    <div id="page-workflow" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost">전체</button>
+          <button class="btn btn-ghost">실행 중</button>
+          <button class="btn btn-ghost">완료</button>
+          <button class="btn btn-ghost">실패</button>
+        </div>
+        <button class="btn btn-primary">+ 워크플로우 등록</button>
+      </div>
+
+      <!-- WF-204: 실행 중 -->
+      <div class="workflow-card">
+        <div class="wf-header">
+          <div>
+            <div class="wf-title">#WF-204 · k8s-slave 설정 순차 배포 (DC1 → DC2)</div>
+            <div class="wf-meta">
+              <span>settings-conf.yml</span> · <span>실행자: jh.lee</span> · <span>638 hosts</span> · <span>Physical</span>
+              · <span class="platform-tag os">OS</span>
+            </div>
+          </div>
+          <span class="badge running">실행 중</span>
+        </div>
+        <div class="wf-pipeline">
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">GitHub<br>PR Merge</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">Lint<br>검증</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">Dry-run<br>실행</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">승인<br>완료</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle running">🔄</div><div class="wf-label">DC1<br>배포 중</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle wait">⏳</div><div class="wf-label">DC1<br>헬스체크</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle idle">💤</div><div class="wf-label">DC2<br>배포</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle idle">💤</div><div class="wf-label">DC2<br>헬스체크</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle idle">🔔</div><div class="wf-label">Slack<br>알림</div></div>
+        </div>
+        <div class="wf-status-bar info">⏱ DC1 배포 진행 중 · 342/500 hosts 완료 · 예상 잔여 약 6분</div>
+      </div>
+
+      <!-- WF-203: 승인 대기 -->
+      <div class="workflow-card">
+        <div class="wf-header">
+          <div>
+            <div class="wf-title">#WF-203 · Redis Cluster 7.0 → 7.2 업그레이드</div>
+            <div class="wf-meta">
+              <span>redis.yml</span> · <span>요청자: sy.park</span> · <span>9 hosts</span> · <span>OpenStack</span>
+              · <span class="platform-tag redis">Redis</span>
+            </div>
+          </div>
+          <span class="badge pending">승인 대기</span>
+        </div>
+        <div class="wf-pipeline">
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">GitHub<br>PR Merge</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">Lint<br>검증</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">Dry-run<br>실행</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle wait">⏳</div><div class="wf-label">승인<br>대기</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle idle">💤</div><div class="wf-label">노드별<br>롤링 업그레이드</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle idle">💤</div><div class="wf-label">클러스터<br>상태 검증</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle idle">🔔</div><div class="wf-label">Slack<br>알림</div></div>
+        </div>
+        <div class="wf-status-bar warning">⏳ 45분째 승인 대기 중 · 담당자: sr.infra@company.com</div>
+      </div>
+
+      <!-- WF-202: ES 롤링 재시작 완료 -->
+      <div class="workflow-card">
+        <div class="wf-header">
+          <div>
+            <div class="wf-title">#WF-202 · Elasticsearch Cluster 롤링 재시작</div>
+            <div class="wf-meta">
+              <span>elasticsearch.yml</span> · <span>스케줄 트리거 (매주 월요일 03:00)</span> · <span>27 hosts</span> · <span>ESXi</span>
+              · <span class="platform-tag es">ES</span>
+            </div>
+          </div>
+          <span class="badge success">완료</span>
+        </div>
+        <div class="wf-pipeline">
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">스케줄<br>트리거</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">클러스터<br>상태 확인</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">샤드<br>이동 중지</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">노드별<br>롤링 재시작</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">샤드<br>재분배</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">인덱스<br>상태 검증</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">Slack<br>알림</div></div>
+        </div>
+        <div class="wf-status-bar success">✅ 완료 · 총 소요 22분 14초 · 오늘 04:00:14 완료</div>
+      </div>
+
+      <!-- WF-201: MySQL 레플리케이션 자동화 완료 -->
+      <div class="workflow-card">
+        <div class="wf-header">
+          <div>
+            <div class="wf-title">#WF-201 · MySQL 레플리케이션 Master 전환 자동화</div>
+            <div class="wf-meta">
+              <span>mysql.yml</span> · <span>GitHub Webhook 트리거</span> · <span>16 hosts</span> · <span>Physical DC1/DC2</span>
+              · <span class="platform-tag mysql">MySQL</span>
+            </div>
+          </div>
+          <span class="badge success">완료</span>
+        </div>
+        <div class="wf-pipeline">
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">GitHub<br>Webhook</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">Syntax<br>Lint</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">Dry-run</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">승인</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">DC1<br>Master 전환</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">복제 지연<br>모니터링</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">DC2<br>Slave 설정</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">Slack<br>알림</div></div>
+        </div>
+        <div class="wf-status-bar success">✅ 완료 · 총 소요 8분 52초 · 어제 18:30 완료</div>
+      </div>
+
+      <!-- WF-200: Hadoop HDFS 밸런서 실패 -->
+      <div class="workflow-card">
+        <div class="wf-header">
+          <div>
+            <div class="wf-title">#WF-200 · Hadoop HDFS Balancer 자동 실행</div>
+            <div class="wf-meta">
+              <span>hadoop.yml</span> · <span>스케줄 트리거 (매일 01:00)</span> · <span>48 hosts</span> · <span>Physical DC1</span>
+              · <span class="platform-tag hadoop">Hadoop</span>
+            </div>
+          </div>
+          <span class="badge failed">실패</span>
+        </div>
+        <div class="wf-pipeline">
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">스케줄<br>트리거</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">HDFS<br>상태 확인</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle fail">❌</div><div class="wf-label">Balancer<br>실행</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle done">✅</div><div class="wf-label">실패<br>알림 발송</div></div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-node"><div class="wf-circle idle">💤</div><div class="wf-label">재시도<br>예약</div></div>
+        </div>
+        <div class="wf-status-bar danger">❌ 실패 · Balancer 프로세스 충돌 (HDFS SafeMode) · 어제 01:04 · 내일 01:00 자동 재시도 예약됨</div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: INVENTORY ══ -->
+    <div id="page-inventory" class="page">
+      <div class="inventory-filters">
+        <input type="text" class="search-input" placeholder="🔍  hostname, IP, 그룹 검색...">
+        <select class="filter-select"><option>전체 환경</option><option>Physical</option><option>OpenStack</option><option>ESXi</option><option>AWS</option><option>GCP</option><option>Azure</option></select>
+        <select class="filter-select"><option>전체 플랫폼</option><option>k8s</option><option>Redis</option><option>Elasticsearch</option><option>MySQL</option><option>PostgreSQL</option><option>Hadoop</option><option>Envoy</option></select>
+        <select class="filter-select"><option>DC 전체</option><option>DC1</option><option>DC2</option></select>
+        <select class="filter-select"><option>전체 상태</option><option>정상</option><option>오류</option><option>점검 중</option></select>
+        <button class="btn btn-ghost">🔄 CMDB 동기화</button>
+        <button class="btn btn-ghost">📥 JSON 내보내기</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th><input type="checkbox"></th>
+                <th>Hostname</th><th>IP</th><th>플랫폼</th><th>환경</th><th>그룹</th><th>OS</th><th>DC</th><th>마지막 배포</th><th>상태</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><span class="mono">k8s-worker01-dc1</span></td>
+                  <td><span class="mono">172.30.10.11</span></td>
+                  <td><span class="platform-tag k8s">K8s</span></td>
+                  <td><span class="env-badge physical">Physical</span></td>
+                  <td>k8s-worker-dc1</td>
+                  <td>Rocky 9.4</td><td>DC1</td>
+                  <td class="text-sm">15분 전</td>
+                  <td><span class="badge success">정상</span></td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><span class="mono">redis01-dc2</span></td>
+                  <td><span class="mono">172.31.20.41</span></td>
+                  <td><span class="platform-tag redis">Redis</span></td>
+                  <td><span class="env-badge openstack">OpenStack</span></td>
+                  <td>redis-cluster-dc2</td>
+                  <td>Rocky 9.4</td><td>DC2</td>
+                  <td class="text-sm">2시간 전</td>
+                  <td><span class="badge success">정상</span></td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><span class="mono">es-data01-dc1</span></td>
+                  <td><span class="mono">172.30.50.11</span></td>
+                  <td><span class="platform-tag es">ES</span></td>
+                  <td><span class="env-badge esxi">ESXi</span></td>
+                  <td>es-data-dc1</td>
+                  <td>Rocky 9.4</td><td>DC1</td>
+                  <td class="text-sm">1시간 전</td>
+                  <td><span class="badge success">정상</span></td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><span class="mono">db-mysql01-gcp</span></td>
+                  <td><span class="mono">10.0.1.54</span></td>
+                  <td><span class="platform-tag mysql">MySQL</span></td>
+                  <td><span class="env-badge gcp">GCP</span></td>
+                  <td>db-mysql-primary</td>
+                  <td>Rocky 9.4</td><td>—</td>
+                  <td class="text-sm">어제</td>
+                  <td><span class="badge failed">오류</span></td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><span class="mono">hadoop-dn01-dc1</span></td>
+                  <td><span class="mono">172.30.80.11</span></td>
+                  <td><span class="platform-tag hadoop">Hadoop</span></td>
+                  <td><span class="env-badge physical">Physical</span></td>
+                  <td>hadoop-datanode-dc1</td>
+                  <td>Rocky 8.9</td><td>DC1</td>
+                  <td class="text-sm">3시간 전</td>
+                  <td><span class="badge success">정상</span></td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><span class="mono">envoy-edge01-dc1</span></td>
+                  <td><span class="mono">172.30.5.21</span></td>
+                  <td><span class="platform-tag envoy">Envoy</span></td>
+                  <td><span class="env-badge openstack">OpenStack</span></td>
+                  <td>envoy-edge-dc1</td>
+                  <td>Rocky 9.4</td><td>DC1</td>
+                  <td class="text-sm">2시간 전</td>
+                  <td><span class="badge success">정상</span></td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td><span class="mono">app-server01-aws</span></td>
+                  <td><span class="mono">10.0.10.5</span></td>
+                  <td><span class="platform-tag os">OS</span></td>
+                  <td><span class="env-badge aws">AWS</span></td>
+                  <td>app-server-prod</td>
+                  <td>Amazon Linux 2023</td><td>—</td>
+                  <td class="text-sm">30분 전</td>
+                  <td><span class="badge pending">점검 중</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div style="padding:10px 0;font-size:11.5px;color:var(--text-3);display:flex;align-items:center;gap:12px">
+        <span>전체 <strong style="color:var(--text-1)">10,542</strong> hosts</span>
+        <span>·</span>
+        <span>정상 <strong style="color:var(--success)">10,488</strong></span>
+        <span>·</span>
+        <span>오류 <strong style="color:var(--danger)">12</strong></span>
+        <span>·</span>
+        <span>점검 중 <strong style="color:var(--warning)">42</strong></span>
+        <span>·</span>
+        <span>CMDB 마지막 동기화: 5분 전 <span class="badge success" style="display:inline-flex;padding:1px 7px">자동동기화 활성</span></span>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: PLAYBOOKS ══ -->
+    <div id="page-playbooks" class="page">
+      <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
+        <input type="text" class="search-input" placeholder="🔍  플레이북 검색...">
+        <select class="filter-select"><option>전체 플랫폼</option><option>k8s</option><option>Redis</option><option>Elasticsearch</option><option>MySQL</option><option>PostgreSQL</option><option>Impala</option><option>Hadoop</option><option>Envoy</option><option>OS</option></select>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost">🔄 GitHub 동기화</button>
+        <button class="btn btn-primary">+ 플레이북 등록</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>플레이북</th><th>플랫폼</th><th>설명</th><th>GitHub 경로</th><th>동기화</th><th>성공률</th><th>마지막 실행</th><th></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><strong>k8s.yml</strong></td>
+                  <td><span class="platform-tag k8s">K8s</span></td>
+                  <td class="text-sm">노드 관리 (cordon/drain/upgrade/join/leave)</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/k8s.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">98.7%</strong></td>
+                  <td class="text-sm">15분 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>redis.yml</strong></td>
+                  <td><span class="platform-tag redis">Redis</span></td>
+                  <td class="text-sm">Cluster 관리 (failover/scale/복제설정/업그레이드)</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/redis.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">97.2%</strong></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>elasticsearch.yml</strong></td>
+                  <td><span class="platform-tag es">ES</span></td>
+                  <td class="text-sm">Cluster 롤링 업데이트/재시작/샤드 관리</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/elasticsearch.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">99.1%</strong></td>
+                  <td class="text-sm">1시간 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>mysql.yml</strong></td>
+                  <td><span class="platform-tag mysql">MySQL</span></td>
+                  <td class="text-sm">레플리케이션 설정/헬스체크/백업/Master 전환</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/mysql.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--warning)">88.4%</strong></td>
+                  <td class="text-sm">1시간 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>postgresql.yml</strong></td>
+                  <td><span class="platform-tag pg">PG</span></td>
+                  <td class="text-sm">PostgreSQL HA 설정/vacuumdb/레플리카 관리</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/postgresql.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">96.8%</strong></td>
+                  <td class="text-sm">2시간 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>impala.yml</strong></td>
+                  <td><span class="platform-tag hadoop">Impala</span></td>
+                  <td class="text-sm">Impala Daemon 재시작/메타데이터 갱신/통계 수집</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/impala.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">94.3%</strong></td>
+                  <td class="text-sm">3시간 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>hadoop.yml</strong></td>
+                  <td><span class="platform-tag hadoop">Hadoop</span></td>
+                  <td class="text-sm">HDFS Balancer/YARN ResourceManager HA/SafeMode 해제</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/hadoop.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--warning)">85.1%</strong></td>
+                  <td class="text-sm">어제</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>envoy.yml</strong></td>
+                  <td><span class="platform-tag envoy">Envoy</span></td>
+                  <td class="text-sm">Envoy Proxy 설정 배포/핫 리로드/버전 업그레이드</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/envoy.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">99.5%</strong></td>
+                  <td class="text-sm">2시간 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>post-bootstrap.yml</strong></td>
+                  <td><span class="platform-tag os">OS</span></td>
+                  <td class="text-sm">OS 설치 후 Salt Minion 설정/서비스 활성화/파일 배포</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/post-bootstrap.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">96.3%</strong></td>
+                  <td class="text-sm">15분 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>file-serving.yml</strong></td>
+                  <td><span class="platform-tag os">OS</span></td>
+                  <td class="text-sm">rootentry 파일 배포 (설정/바이너리/스크립트)</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/file-serving.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">98.1%</strong></td>
+                  <td class="text-sm">30분 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+                <tr>
+                  <td><strong>settings-conf.yml</strong></td>
+                  <td><span class="platform-tag os">OS</span></td>
+                  <td class="text-sm">Salt Minion 설정 배포 (settings.conf 갱신)</td>
+                  <td><span class="mono" style="color:var(--brand);font-size:11px">playbooks/settings-conf.yml</span></td>
+                  <td class="text-sm">5분 전</td>
+                  <td><strong style="color:var(--success)">99.2%</strong></td>
+                  <td class="text-sm">1시간 전</td>
+                  <td><div class="flex-row"><button class="btn btn-ghost">보기</button><button class="btn btn-primary">실행</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: SELF-SERVICE ══ -->
+    <div id="page-selfservice" class="page">
+      <div style="font-size:12.5px;color:var(--text-2);margin-bottom:16px;padding:10px 14px;background:var(--success-bg);border:1px solid var(--success-border);border-radius:var(--r-sm)">
+        ✨ 복잡한 Ansible 설정 없이 사전 정의된 템플릿으로 직접 작업을 요청/실행하세요.
+        <strong>Developer</strong> 이상 권한으로 누구나 사용 가능합니다.
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="env-tab active">전체</div>
+        <div class="env-tab">K8s</div>
+        <div class="env-tab">DB</div>
+        <div class="env-tab">Redis</div>
+        <div class="env-tab">OS / 서버</div>
+        <div class="env-tab">보안</div>
+        <div class="env-tab">모니터링</div>
+      </div>
+
+      <div class="catalog-grid">
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#dbeafe">🖥️</div>
+          <div class="catalog-name">서버 OS 프로비저닝</div>
+          <div class="catalog-desc">신규 서버 OS 설치 후 초기 설정(Salt Minion, 서비스 등록)을 자동으로 수행합니다.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 10분</span>
+            <span class="catalog-approval required">🔐 승인 필요</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#fee2e2">🔴</div>
+          <div class="catalog-name">Redis Failover 요청</div>
+          <div class="catalog-desc">지정한 Redis Master 노드를 교체하고 Cluster 상태를 재조정합니다. 서비스 중단 없이 수행됩니다.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 3분</span>
+            <span class="catalog-approval required">🔐 승인 필요</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#dbeafe">☸️</div>
+          <div class="catalog-name">K8s 노드 추가 (Join)</div>
+          <div class="catalog-desc">신규 Worker 노드를 K8s 클러스터에 자동으로 Join하고 Label/Taint를 설정합니다.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 5분</span>
+            <span class="catalog-approval auto">✅ 자동 승인</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#d1fae5">🗄️</div>
+          <div class="catalog-name">MySQL 수동 백업</div>
+          <div class="catalog-desc">지정한 MySQL 인스턴스의 Full Backup을 즉시 실행하고 S3/NFS에 저장합니다.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 20~60분</span>
+            <span class="catalog-approval auto">✅ 자동 승인</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#fef3c7">🔒</div>
+          <div class="catalog-name">SSL 인증서 갱신</div>
+          <div class="catalog-desc">만료 예정 SSL 인증서를 갱신하고 해당 서비스(Nginx/Envoy)를 핫 리로드합니다.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 2분</span>
+            <span class="catalog-approval auto">✅ 자동 승인</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#ede9fe">🔄</div>
+          <div class="catalog-name">서비스 재시작</div>
+          <div class="catalog-desc">지정한 서버 그룹의 특정 서비스를 안전하게 재시작합니다. 롤링 방식 지원.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 1~5분</span>
+            <span class="catalog-approval required">🔐 승인 필요</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#fce7f3">🔍</div>
+          <div class="catalog-name">ES 인덱스 최적화</div>
+          <div class="catalog-desc">Elasticsearch 인덱스 Force Merge 및 통계 수집을 실행합니다. 업무 시간 이외 권장.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 30~120분</span>
+            <span class="catalog-approval required">🔐 승인 필요</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#ecfdf5">🌊</div>
+          <div class="catalog-name">Envoy Config 배포</div>
+          <div class="catalog-desc">Envoy Proxy 설정 파일을 배포하고 핫 리로드합니다. 서비스 중단 없음.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 1분</span>
+            <span class="catalog-approval auto">✅ 자동 승인</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+
+        <div class="catalog-card">
+          <div class="catalog-icon" style="background:#f1f5f9">📋</div>
+          <div class="catalog-name">Config 파일 배포</div>
+          <div class="catalog-desc">지정한 설정 파일을 대상 서버에 배포합니다. GitHub PR 기반 변경사항 추적 포함.</div>
+          <div class="catalog-meta">
+            <span>⏱ 약 2분</span>
+            <span class="catalog-approval auto">✅ 자동 승인</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:10px">요청하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: WORKERS ══ -->
+    <div id="page-workers" class="page">
+      <div class="two-col mb-14">
+        <div class="card">
+          <div class="card-body">
+            <div class="section-title mb-14">🎛️ Control Plane</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="info-row">
+                <div>
+                  <div style="font-weight:700;font-size:13px;font-family:monospace">dookdak-ctrl-01</div>
+                  <div class="text-xs">Primary · 10.10.0.1</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:11px;background:var(--warning-bg);color:#92400e;padding:2px 7px;border-radius:4px;font-weight:700">PRIMARY</span>
+                  <span class="badge success">Active</span>
+                </div>
+              </div>
+              <div class="info-row">
+                <div>
+                  <div style="font-weight:700;font-size:13px;font-family:monospace">dookdak-ctrl-02</div>
+                  <div class="text-xs">Secondary · 10.10.0.2</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:11px;background:var(--info-bg);color:#1e40af;padding:2px 7px;border-radius:4px;font-weight:700">STANDBY</span>
+                  <span class="badge success">Healthy</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="section-title mb-14">📊 전체 큐 현황</div>
+            <div class="three-col" style="text-align:center">
+              <div>
+                <div style="font-size:24px;font-weight:800;color:var(--brand)">23</div>
+                <div class="text-xs">대기 중</div>
+              </div>
+              <div>
+                <div style="font-size:24px;font-weight:800;color:var(--success)">6</div>
+                <div class="text-xs">실행 중</div>
+              </div>
+              <div>
+                <div style="font-size:24px;font-weight:800;color:var(--text-2)">4</div>
+                <div class="text-xs">Workers</div>
+              </div>
+            </div>
+            <div class="progress-wrap mt-14"><div class="progress-bar warning" style="width:46%"></div></div>
+            <div class="text-xs mt-4">큐 사용률 46% — 정상 범위</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title mb-14">⚙️ Ansible Worker Nodes</div>
+      <div class="worker-grid">
+        <div class="worker-card">
+          <div class="worker-header">
+            <div>
+              <div class="worker-name">ansible-worker-01</div>
+              <div class="text-xs">10.10.1.1 · Rocky Linux 9.4</div>
+            </div>
+            <span class="badge success">정상</span>
+          </div>
+          <div class="resource-row">
+            <span class="resource-label">CPU</span>
+            <div class="progress-wrap" style="flex:1"><div class="progress-bar success" style="width:34%"></div></div>
+            <span class="resource-val">34%</span>
+          </div>
+          <div class="resource-row">
+            <span class="resource-label">RAM</span>
+            <div class="progress-wrap" style="flex:1"><div class="progress-bar success" style="width:42%"></div></div>
+            <span class="resource-val">42%</span>
+          </div>
+          <div class="flex-row mt-8">
+            <span class="queue-pill">큐: 8</span>
+            <span style="font-size:12px;color:var(--text-2)">실행 중: <strong>2</strong></span>
+          </div>
+        </div>
+
+        <div class="worker-card">
+          <div class="worker-header">
+            <div>
+              <div class="worker-name">ansible-worker-02</div>
+              <div class="text-xs">10.10.1.2 · Rocky Linux 9.4</div>
+            </div>
+            <span class="badge pending">고부하</span>
+          </div>
+          <div class="resource-row">
+            <span class="resource-label">CPU</span>
+            <div class="progress-wrap" style="flex:1"><div class="progress-bar warning" style="width:67%"></div></div>
+            <span class="resource-val" style="color:var(--warning)">67%</span>
+          </div>
+          <div class="resource-row">
+            <span class="resource-label">RAM</span>
+            <div class="progress-wrap" style="flex:1"><div class="progress-bar warning" style="width:58%"></div></div>
+            <span class="resource-val" style="color:var(--warning)">58%</span>
+          </div>
+          <div class="flex-row mt-8">
+            <span class="queue-pill">큐: 12</span>
+            <span style="font-size:12px;color:var(--text-2)">실행 중: <strong>3</strong></span>
+          </div>
+        </div>
+
+        <div class="worker-card">
+          <div class="worker-header">
+            <div>
+              <div class="worker-name">ansible-worker-03</div>
+              <div class="text-xs">10.10.1.3 · Rocky Linux 9.4</div>
+            </div>
+            <span class="badge success">정상</span>
+          </div>
+          <div class="resource-row">
+            <span class="resource-label">CPU</span>
+            <div class="progress-wrap" style="flex:1"><div class="progress-bar success" style="width:12%"></div></div>
+            <span class="resource-val">12%</span>
+          </div>
+          <div class="resource-row">
+            <span class="resource-label">RAM</span>
+            <div class="progress-wrap" style="flex:1"><div class="progress-bar success" style="width:28%"></div></div>
+            <span class="resource-val">28%</span>
+          </div>
+          <div class="flex-row mt-8">
+            <span class="queue-pill">큐: 3</span>
+            <span style="font-size:12px;color:var(--text-2)">실행 중: <strong>1</strong></span>
+          </div>
+        </div>
+
+        <div class="worker-card">
+          <div class="worker-header">
+            <div>
+              <div class="worker-name">ansible-worker-04</div>
+              <div class="text-xs">10.10.1.4 · Rocky Linux 9.4</div>
+            </div>
+            <span class="badge success">대기</span>
+          </div>
+          <div class="resource-row">
+            <span class="resource-label">CPU</span>
+            <div class="progress-wrap" style="flex:1"><div class="progress-bar success" style="width:5%"></div></div>
+            <span class="resource-val">5%</span>
+          </div>
+          <div class="resource-row">
+            <span class="resource-label">RAM</span>
+            <div class="progress-wrap" style="flex:1"><div class="progress-bar success" style="width:20%"></div></div>
+            <span class="resource-val">20%</span>
+          </div>
+          <div class="flex-row mt-8">
+            <span class="queue-pill">큐: 0</span>
+            <span style="font-size:12px;color:var(--text-2)">실행 중: <strong>0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn btn-ghost">+ 워커 노드 추가</button>
+        <button class="btn btn-ghost">⚖️ 큐 재분배</button>
+        <button class="btn btn-ghost">📊 성능 리포트</button>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ALERTS ══ -->
+    <div id="page-alerts" class="page">
+      <div class="two-col" style="margin-bottom:16px;align-items:start">
+        <div>
+          <div class="section-title mb-14">🚨 활성 알림</div>
+          <div class="alert-feed">
+            <div class="alert-item critical">
+              <span class="alert-severity critical">CRITICAL</span>
+              <div class="alert-body">
+                <div class="alert-title">db-mysql-primary 연속 4회 배포 실패</div>
+                <div class="alert-desc">GCP 방화벽 정책 변경으로 SSH 접근 불가. 수동 확인 필요.</div>
+                <div class="alert-time">🕐 5분 전 · Job #2037 mysql.yml</div>
+                <div class="flex-row mt-8">
+                  <button class="btn btn-ghost" style="font-size:11.5px;padding:4px 10px">로그 보기</button>
+                  <button class="btn btn-danger" style="font-size:11.5px;padding:4px 10px">인지 처리</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="alert-item warning">
+              <span class="alert-severity warning">WARNING</span>
+              <div class="alert-body">
+                <div class="alert-title">ansible-worker-02 CPU 고부하 (67%)</div>
+                <div class="alert-desc">3개 대형 Job 동시 처리 중. 큐 12개 대기. 추가 워커 투입 검토 필요.</div>
+                <div class="alert-time">🕐 12분 전 · ansible-worker-02</div>
+                <div class="flex-row mt-8">
+                  <button class="btn btn-ghost" style="font-size:11.5px;padding:4px 10px">워커 상태 보기</button>
+                  <button class="btn btn-ghost" style="font-size:11.5px;padding:4px 10px">인지 처리</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="alert-item info">
+              <span class="alert-severity info">INFO</span>
+              <div class="alert-body">
+                <div class="alert-title">WF-204 DC1 배포 완료 — DC2 진행 예정</div>
+                <div class="alert-desc">k8s-worker-dc1 (500 hosts) 배포 완료. DC1 헬스체크 후 DC2 자동 진행.</div>
+                <div class="alert-time">🕐 8분 전 · WF-204 settings-conf.yml</div>
+              </div>
+            </div>
+
+            <div class="alert-item info">
+              <span class="alert-severity info">INFO</span>
+              <div class="alert-body">
+                <div class="alert-title">CMDB 자동 동기화 완료</div>
+                <div class="alert-desc">전체 10,542 hosts 동기화. 신규 38개 추가, 삭제 2개, 변경 154개.</div>
+                <div class="alert-time">🕐 5분 전 · CMDB Sync</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title mb-14">⚙️ 알림 규칙</div>
+          <div class="alert-rules-grid">
+            <div class="alert-rule-card">
+              <div class="rule-name">🔴 연속 실패 임계치</div>
+              <div class="rule-desc">같은 대상에 5회 이상 연속 실패 시 PagerDuty 에스컬레이션</div>
+              <div class="rule-channel">→ PagerDuty + #infra-incident</div>
+            </div>
+            <div class="alert-rule-card">
+              <div class="rule-name">⚠️ 성공률 임계치</div>
+              <div class="rule-desc">실행 중 성공률 90% 미만 시 Slack 알림</div>
+              <div class="rule-channel">→ #infra-deploy-alert</div>
+            </div>
+            <div class="alert-rule-card">
+              <div class="rule-name">⚙️ Worker 고부하</div>
+              <div class="rule-desc">CPU/RAM 80% 초과 시 경고</div>
+              <div class="rule-channel">→ #infra-ops-alert</div>
+            </div>
+            <div class="alert-rule-card">
+              <div class="rule-name">⏳ 승인 장시간 대기</div>
+              <div class="rule-desc">1시간 이상 승인 대기 시 리마인더 발송</div>
+              <div class="rule-channel">→ 요청자 + 승인자 DM</div>
+            </div>
+            <div class="alert-rule-card">
+              <div class="rule-name">🔐 CMDB 동기화 실패</div>
+              <div class="rule-desc">CMDB 동기화 2회 연속 실패 시 알림</div>
+              <div class="rule-channel">→ #infra-ops-alert</div>
+            </div>
+            <div class="alert-rule-card">
+              <div class="rule-name">✅ 대규모 배포 완료</div>
+              <div class="rule-desc">500+ hosts 배포 완료 시 성공 알림</div>
+              <div class="rule-channel">→ #infra-deploy-success</div>
+            </div>
+          </div>
+          <button class="btn btn-ghost mt-14">+ 알림 규칙 추가</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: RBAC ══ -->
+    <div id="page-rbac" class="page">
+      <div class="two-col mb-14" style="align-items:start">
+        <div>
+          <div class="section-title mb-14">👥 역할 정의</div>
+          <div class="card">
+            <div class="card-body" style="padding:0">
+              <table>
+                <thead><tr><th>역할</th><th>설명</th><th>사용자 수</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><span class="role-badge admin">Platform Admin</span></td>
+                    <td class="text-sm">RBAC 포함 전체 권한</td>
+                    <td>3</td>
+                  </tr>
+                  <tr>
+                    <td><span class="role-badge senior">Senior DevOps</span></td>
+                    <td class="text-sm">전체 실행 + 승인 처리 권한</td>
+                    <td>8</td>
+                  </tr>
+                  <tr>
+                    <td><span class="role-badge devops">DevOps</span></td>
+                    <td class="text-sm">지정 플레이북 실행 권한</td>
+                    <td>24</td>
+                  </tr>
+                  <tr>
+                    <td><span class="role-badge dev">Developer</span></td>
+                    <td class="text-sm">Self-service 요청만 가능</td>
+                    <td>120</td>
+                  </tr>
+                  <tr>
+                    <td><span class="role-badge viewer">Viewer</span></td>
+                    <td class="text-sm">읽기 전용 (이력/로그 조회)</td>
+                    <td>45</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <button class="btn btn-ghost mt-8">+ 역할 추가</button>
+        </div>
+        <div>
+          <div class="section-title mb-14">🔑 Keycloak 그룹 매핑</div>
+          <div class="card">
+            <div class="card-body">
+              <div class="info-row">
+                <span class="info-key">infra-admin</span>
+                <span class="role-badge admin">Platform Admin</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">infra-senior</span>
+                <span class="role-badge senior">Senior DevOps</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">infra-devops</span>
+                <span class="role-badge devops">DevOps</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">developer</span>
+                <span class="role-badge dev">Developer</span>
+              </div>
+              <div class="info-row">
+                <span class="info-key">all-employees</span>
+                <span class="role-badge viewer">Viewer</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title mb-14">🗂️ 플레이북 × 역할 권한 매트릭스</div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="rbac-matrix">
+            <table>
+              <thead>
+                <tr>
+                  <th>플레이북</th>
+                  <th>플랫폼</th>
+                  <th><span class="role-badge admin">Admin</span></th>
+                  <th><span class="role-badge senior">Senior</span></th>
+                  <th><span class="role-badge devops">DevOps</span></th>
+                  <th><span class="role-badge dev">Dev</span></th>
+                  <th><span class="role-badge viewer">Viewer</span></th>
+                  <th>승인 필요</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>k8s.yml</strong></td><td><span class="platform-tag k8s">K8s</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>👁️</td><td>👁️</td><td><span class="badge pending" style="font-size:10px">Admin 승인</span></td></tr>
+                <tr><td><strong>redis.yml</strong></td><td><span class="platform-tag redis">Redis</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge pending" style="font-size:10px">Senior 승인</span></td></tr>
+                <tr><td><strong>elasticsearch.yml</strong></td><td><span class="platform-tag es">ES</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge pending" style="font-size:10px">Senior 승인</span></td></tr>
+                <tr><td><strong>mysql.yml</strong></td><td><span class="platform-tag mysql">MySQL</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge pending" style="font-size:10px">Admin 승인</span></td></tr>
+                <tr><td><strong>postgresql.yml</strong></td><td><span class="platform-tag pg">PG</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge pending" style="font-size:10px">Admin 승인</span></td></tr>
+                <tr><td><strong>impala.yml</strong></td><td><span class="platform-tag hadoop">Impala</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge success" style="font-size:10px">없음</span></td></tr>
+                <tr><td><strong>hadoop.yml</strong></td><td><span class="platform-tag hadoop">Hadoop</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>—</td><td>👁️</td><td><span class="badge pending" style="font-size:10px">Admin 승인</span></td></tr>
+                <tr><td><strong>envoy.yml</strong></td><td><span class="platform-tag envoy">Envoy</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge success" style="font-size:10px">없음</span></td></tr>
+                <tr><td><strong>post-bootstrap.yml</strong></td><td><span class="platform-tag os">OS</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge pending" style="font-size:10px">Senior 승인</span></td></tr>
+                <tr><td><strong>file-serving.yml</strong></td><td><span class="platform-tag os">OS</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge success" style="font-size:10px">없음</span></td></tr>
+                <tr><td><strong>settings-conf.yml</strong></td><td><span class="platform-tag os">OS</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td><span class="perm-check">✅</span></td><td>—</td><td>👁️</td><td><span class="badge pending" style="font-size:10px">Senior 승인</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="text-xs mt-8">✅ = 실행 가능 · 👁️ = 조회만 · — = 접근 불가</div>
+    </div>
+
+    <!-- ══ PAGE: SETTINGS ══ -->
+    <div id="page-settings" class="page">
+      <div class="two-col">
+        <div>
+          <div class="settings-section">
+            <div class="settings-title">🔐 인증 (Keycloak SSO)</div>
+            <div class="info-row">
+              <div>
+                <div style="font-weight:600;font-size:13px">Keycloak OIDC / SAML 2.0</div>
+                <div class="text-xs">Realm: infra-platform · https://keycloak.internal/realms/infra-platform</div>
+              </div>
+              <span class="badge success">활성</span>
+            </div>
+            <div class="info-row mt-8">
+              <div>
+                <div style="font-weight:600;font-size:13px">Keycloak 그룹 → RBAC 자동 매핑</div>
+                <div class="text-xs">Keycloak 그룹 → 배포 권한 자동 동기화 (JWT Claim 기반)</div>
+              </div>
+              <span class="badge success">활성</span>
+            </div>
+            <div class="info-row mt-8">
+              <div>
+                <div style="font-weight:600;font-size:13px">GitHub Webhook</div>
+                <div class="text-xs">PR Merge → 자동 파이프라인 트리거 · infra-playbooks 레포</div>
+              </div>
+              <span class="badge success">활성</span>
+            </div>
+            <div class="info-row mt-8">
+              <div>
+                <div style="font-weight:600;font-size:13px">CMDB 자동 동기화</div>
+                <div class="text-xs">매 5분 · Static JSON 캐시 → /data/inventory.json</div>
+              </div>
+              <span class="badge success">활성</span>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-title">⚙️ 시스템 설정</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="form-group"><label>기본 동시 실행 수 (Default Forks)</label><input type="text" value="50"></div>
+              <div class="form-group"><label>Job 타임아웃 (초)</label><input type="text" value="3600"></div>
+              <div class="form-group"><label>로그 보존 기간 (일)</label><input type="text" value="90"></div>
+              <div class="form-group"><label>Ansible 버전</label><input type="text" value="ansible-core 2.17.x (관리형)"></div>
+              <button class="btn btn-primary mt-8">저장</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="settings-section">
+            <div class="settings-title">🔔 알림 채널 설정</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="form-group"><label>Slack — 성공 알림</label><input type="text" value="#infra-deploy-success"></div>
+              <div class="form-group"><label>Slack — 실패 알림</label><input type="text" value="#infra-deploy-alert"></div>
+              <div class="form-group"><label>Slack — 승인 요청</label><input type="text" value="#infra-deploy-approval"></div>
+              <div class="form-group"><label>PagerDuty 서비스 키</label><input type="text" value="••••••••••••••••••••"></div>
+              <div class="form-group"><label>이메일 수신자 (쉼표 구분)</label><input type="text" value="sr.infra@company.com, ops-team@company.com"></div>
+              <button class="btn btn-primary mt-8">저장</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-title">🔑 Keycloak 연결 정보</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="form-group"><label>Keycloak Server URL</label><input type="text" value="https://keycloak.internal"></div>
+              <div class="form-group"><label>Realm</label><input type="text" value="infra-platform"></div>
+              <div class="form-group"><label>Client ID</label><input type="text" value="dookdak-app"></div>
+              <div class="form-group"><label>Client Secret</label><input type="text" value="••••••••••••••••••••"></div>
+              <button class="btn btn-ghost">🔗 연결 테스트</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ════════════ LOG MODAL ════════════ -->
+<div class="modal-overlay" id="logModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Job #2041 · post-bootstrap.yml</div>
+        <div class="text-sm" style="margin-top:4px;display:flex;gap:8px;align-items:center">
+          <span class="env-badge physical">Physical</span>
+          <span>k8s-worker-dc1</span>
+          <span>·</span>
+          <span>실행자: jh.lee</span>
+          <span>·</span>
+          <span class="badge running" style="display:inline-flex">실행 중</span>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeLogModal()">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <span style="font-size:12px;background:var(--success-bg);color:#065f46;border:1px solid var(--success-border);padding:4px 10px;border-radius:6px;font-weight:600">✅ ok: 821</span>
+      <span style="font-size:12px;background:var(--warning-bg);color:#92400e;border:1px solid #fde68a;padding:4px 10px;border-radius:6px;font-weight:600">🔄 changed: 342</span>
+      <span style="font-size:12px;background:#f1f5f9;color:#475569;border:1px solid var(--border);padding:4px 10px;border-radius:6px;font-weight:600">⏭ skipped: 154</span>
+      <span style="font-size:12px;background:var(--danger-bg);color:#991b1b;border:1px solid var(--danger-border);padding:4px 10px;border-radius:6px;font-weight:600">❌ failed: 0</span>
+    </div>
+    <div class="log-container">
+      <div class="log-line"><span class="log-time">15:04:01</span><span class="log-info">PLAY [post bootstrap — k8s-worker-dc1] **************************</span></div>
+      <div class="log-line"><span class="log-time">15:04:02</span><span class="log-info">TASK [Gathering Facts] *******************************************</span></div>
+      <div class="log-line"><span class="log-time">15:04:04</span><span class="log-ok">ok: [<span class="log-host">k8s-worker01-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:04</span><span class="log-ok">ok: [<span class="log-host">k8s-worker02-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:04</span><span class="log-ok">ok: [<span class="log-host">k8s-worker03-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:05</span><span class="log-task">TASK [salt : Deploy /etc/salt/minion.d/settings.conf] ************</span></div>
+      <div class="log-line"><span class="log-time">15:04:07</span><span class="log-changed">changed: [<span class="log-host">k8s-worker01-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:07</span><span class="log-ok">ok: [<span class="log-host">k8s-worker02-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:07</span><span class="log-changed">changed: [<span class="log-host">k8s-worker03-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:08</span><span class="log-task">TASK [bootstrap : Execute post.bash] *****************************</span></div>
+      <div class="log-line"><span class="log-time">15:04:12</span><span class="log-changed">changed: [<span class="log-host">k8s-worker01-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:12</span><span class="log-changed">changed: [<span class="log-host">k8s-worker02-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:13</span><span class="log-task">TASK [service : Enable salt-minion] ******************************</span></div>
+      <div class="log-line"><span class="log-time">15:04:15</span><span class="log-ok">ok: [<span class="log-host">k8s-worker01-dc1</span>]</span></div>
+      <div class="log-line"><span class="log-time">15:04:15</span><span class="log-skip">skipping: [<span class="log-host">k8s-worker03-dc1</span>] → already enabled</span></div>
+      <div class="log-line"><span class="log-time">15:04:16</span><span class="log-info">... 진행 중 (342/500 hosts 완료) ...</span></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;align-items:center">
+      <button class="btn btn-ghost">📥 로그 다운로드</button>
+      <button class="btn btn-ghost">⛶ 전체화면</button>
+      <div style="flex:1"></div>
+      <div class="progress-wrap" style="width:140px"><div class="progress-bar" style="width:68%"></div></div>
+      <span class="text-xs">342/500 (68%)</span>
+      <button class="btn btn-ghost" onclick="closeLogModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ NOTIFICATION PANEL ════════════ -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header">
+    <div class="notif-panel-title">🔔 알림</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px">모두 읽음</button>
+      <button class="modal-close" onclick="toggleNotif()">✕</button>
+    </div>
+  </div>
+  <div class="notif-list">
+    <div class="notif-item unread" style="display:flex;gap:10px;align-items:flex-start">
+      <div class="notif-icon">🔴</div>
+      <div>
+        <div class="notif-text">db-mysql-primary 배포 실패</div>
+        <div class="notif-sub">GCP 방화벽 정책으로 SSH 접근 불가</div>
+        <div class="notif-time">5분 전</div>
+      </div>
+    </div>
+    <div class="notif-item unread" style="display:flex;gap:10px;align-items:flex-start">
+      <div class="notif-icon">⚠️</div>
+      <div>
+        <div class="notif-text">ansible-worker-02 고부하 감지</div>
+        <div class="notif-sub">CPU 67%, 큐 12개 적체</div>
+        <div class="notif-time">12분 전</div>
+      </div>
+    </div>
+    <div class="notif-item" style="display:flex;gap:10px;align-items:flex-start">
+      <div class="notif-icon">✅</div>
+      <div>
+        <div class="notif-text">WF-202 ES 롤링 재시작 완료</div>
+        <div class="notif-sub">27 hosts · 22분 14초 소요</div>
+        <div class="notif-time">오늘 04:00</div>
+      </div>
+    </div>
+    <div class="notif-item" style="display:flex;gap:10px;align-items:flex-start">
+      <div class="notif-icon">⏳</div>
+      <div>
+        <div class="notif-text">#WF-204 승인 요청</div>
+        <div class="notif-sub">jh.lee · settings-conf.yml · 638 hosts</div>
+        <div class="notif-time">2시간 전</div>
+      </div>
+    </div>
+    <div class="notif-item" style="display:flex;gap:10px;align-items:flex-start">
+      <div class="notif-icon">🔄</div>
+      <div>
+        <div class="notif-text">CMDB 동기화 완료</div>
+        <div class="notif-sub">신규 38개 추가, 변경 154개</div>
+        <div class="notif-time">5분 전</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel backdrop -->
+<div id="notifBackdrop" style="display:none;position:fixed;inset:0;z-index:149" onclick="toggleNotif()"></div>
+
+<script>
+  const pageInfo = {
+    dashboard:   { title: '대시보드',          sub: '전체 배포 현황 · 실시간' },
+    deploy:      { title: '배포 실행',          sub: '플레이북 선택 및 대상 설정' },
+    history:     { title: '실행 이력',          sub: '전체 배포 감사 로그' },
+    approval:    { title: '승인 대기',          sub: '배포 전 검토 및 승인 처리' },
+    workflow:    { title: '워크플로우',          sub: '배포 파이프라인 현황 및 관리' },
+    selfservice: { title: '셀프서비스 카탈로그', sub: '사전 정의된 작업 템플릿으로 직접 요청' },
+    inventory:   { title: '인벤토리',           sub: 'CMDB 기반 서버 목록 · AWS · GCP · On-prem' },
+    playbooks:   { title: '플레이북',           sub: 'GitHub 연동 플레이북 관리 · 플랫폼 레벨' },
+    workers:     { title: '워커 노드',           sub: 'Ansible Control Plane & Worker 상태' },
+    alerts:      { title: '알림 센터',           sub: '실시간 알림 및 알림 규칙 설정' },
+    rbac:        { title: '권한 관리 (RBAC)',    sub: '역할 기반 플레이북 실행 권한 제어' },
+    settings:    { title: '설정',               sub: 'Keycloak SSO · 알림 · 시스템 설정' },
+  };
+
+  function showPage(name, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const page = document.getElementById('page-' + name);
+    if (page) page.classList.add('active');
+    if (el && el.classList) el.classList.add('active');
+    const info = pageInfo[name] || {};
+    document.getElementById('topbar-title').textContent = info.title || name;
+    document.getElementById('topbar-sub').textContent = info.sub || '';
+    // Close notif panel on nav
+    closeNotif();
+  }
+
+  function openLogModal() { document.getElementById('logModal').classList.add('open'); }
+  function closeLogModal() { document.getElementById('logModal').classList.remove('open'); }
+  document.getElementById('logModal').addEventListener('click', function(e) {
+    if (e.target === this) closeLogModal();
+  });
+
+  let notifOpen = false;
+  function toggleNotif() {
+    notifOpen = !notifOpen;
+    document.getElementById('notifPanel').classList.toggle('open', notifOpen);
+    document.getElementById('notifBackdrop').style.display = notifOpen ? 'block' : 'none';
+  }
+  function closeNotif() {
+    notifOpen = false;
+    document.getElementById('notifPanel').classList.remove('open');
+    document.getElementById('notifBackdrop').style.display = 'none';
+  }
+
+  // Env tab switching
+  document.querySelectorAll('.env-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      this.closest('.env-tabs')?.querySelectorAll('.env-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Catalog tab switching
+  document.querySelectorAll('#page-selfservice .env-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('#page-selfservice .env-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
