@@ -50,97 +50,91 @@ export default function Settings() {
   }
 
   return (
-    <form onSubmit={handleSave} className="max-w-2xl space-y-6">
-      <div className="bg-white rounded-lg border p-5 space-y-4">
-        <h2 className="font-semibold text-gray-900 border-b pb-3">Keycloak 설정</h2>
+    <form onSubmit={handleSave} className="max-w-2xl space-y-5">
+      <div className="card p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-800 border-b border-gray-100 pb-3">Keycloak 설정</h2>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Keycloak URL</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Keycloak URL</label>
           <input
             type="url"
             value={form.keycloakUrl}
             onChange={(e) => update('keycloakUrl', e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full"
             placeholder="https://keycloak.example.com"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Realm</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Realm</label>
           <input
             type="text"
             value={form.keycloakRealm}
             onChange={(e) => update('keycloakRealm', e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Client ID</label>
           <input
             type="text"
             value={form.keycloakClientId}
             onChange={(e) => update('keycloakClientId', e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full"
           />
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border p-5 space-y-4">
-        <h2 className="font-semibold text-gray-900 border-b pb-3">알림 설정</h2>
+      <div className="card p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-800 border-b border-gray-100 pb-3">알림 설정</h2>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Slack Webhook URL</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Slack Webhook URL</label>
           <input
             type="url"
             value={form.slackWebhookUrl}
             onChange={(e) => update('slackWebhookUrl', e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full"
             placeholder="https://hooks.slack.com/services/..."
           />
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border p-5 space-y-4">
-        <h2 className="font-semibold text-gray-900 border-b pb-3">실행 설정</h2>
+      <div className="card p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-800 border-b border-gray-100 pb-3">실행 설정</h2>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">기본 Forks</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">기본 Forks</label>
             <input
               type="number"
               value={form.defaultForks}
               onChange={(e) => update('defaultForks', Number(e.target.value))}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">최대 동시 실행</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">최대 동시 실행</label>
             <input
               type="number"
               value={form.maxConcurrentJobs}
               onChange={(e) => update('maxConcurrentJobs', Number(e.target.value))}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">로그 보관 (일)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">로그 보관 (일)</label>
             <input
               type="number"
               value={form.logRetentionDays}
               onChange={(e) => update('logRetentionDays', Number(e.target.value))}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full"
             />
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          className="bg-brand text-white px-6 py-2 rounded-lg hover:bg-brand-hover text-sm font-medium"
-        >
-          저장
-        </button>
-        {saved && <span className="text-green-600 text-sm">설정이 저장되었습니다.</span>}
+        <button type="submit" className="btn-primary">저장</button>
+        {saved && <span className="text-green-600 text-sm font-medium">설정이 저장되었습니다.</span>}
       </div>
 
-      {/* GitHub Ansible Repo Sync */}
       <GitSyncPanel status={syncStatus} onTrigger={() => triggerSync.mutate()} isTriggerPending={triggerSync.isPending} />
     </form>
   )
@@ -164,16 +158,16 @@ function GitSyncPanel({
     : '지금 동기화'
 
   return (
-    <div className="bg-white rounded-lg border p-5 space-y-4">
-      <div className="flex items-center justify-between border-b pb-3">
-        <h2 className="font-semibold text-gray-900">GitHub Ansible Repo 동기화</h2>
+    <div className="card p-6 space-y-4">
+      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <h2 className="text-sm font-semibold text-gray-800">GitHub Ansible Repo 동기화</h2>
         <span
-          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+          className={`text-xs px-2.5 py-1 rounded-full font-medium ${
             !status.enabled
               ? 'bg-gray-100 text-gray-500'
               : status.last_error
-              ? 'bg-red-100 text-red-600'
-              : 'bg-green-100 text-green-700'
+              ? 'bg-red-50 text-red-600'
+              : 'bg-green-50 text-green-700'
           }`}
         >
           {!status.enabled ? '비활성' : status.last_error ? '오류' : '정상'}
@@ -182,11 +176,11 @@ function GitSyncPanel({
 
       {!status.enabled ? (
         <p className="text-sm text-gray-500">
-          <code className="bg-gray-100 px-1 rounded">GITHUB_REPO_URL</code> 환경변수를 설정하면 자동 동기화가 활성화됩니다.
+          <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">GITHUB_REPO_URL</code> 환경변수를 설정하면 자동 동기화가 활성화됩니다.
         </p>
       ) : (
         <div className="space-y-3 text-sm">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
             <Row label="저장소" value={status.repo_url} mono />
             <Row label="브랜치" value={status.branch} mono />
             <Row label="로컬 경로" value={status.local_dir} mono />
@@ -206,7 +200,7 @@ function GitSyncPanel({
           </div>
 
           {status.last_error && (
-            <div className="bg-red-50 border border-red-200 rounded p-3">
+            <div className="bg-red-50 border border-red-100 rounded-lg p-3">
               <p className="text-xs font-medium text-red-600 mb-1">마지막 오류</p>
               <pre className="text-xs text-red-700 whitespace-pre-wrap break-all">{status.last_error}</pre>
             </div>
@@ -217,7 +211,7 @@ function GitSyncPanel({
               type="button"
               onClick={onTrigger}
               disabled={status.is_running || isTriggerPending}
-              className="bg-gray-800 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="bg-gray-800 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 text-sm font-medium disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               {(status.is_running || isTriggerPending) && (
                 <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -225,7 +219,7 @@ function GitSyncPanel({
               {syncLabel}
             </button>
             <p className="text-xs text-gray-400">
-              Webhook URL: <code className="bg-gray-100 px-1 rounded">POST /webhook/github</code>
+              Webhook: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">POST /webhook/github</code>
             </p>
           </div>
         </div>
@@ -237,8 +231,8 @@ function GitSyncPanel({
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <>
-      <span className="text-gray-500">{label}</span>
-      <span className={mono ? 'font-mono text-xs text-gray-800 truncate' : 'text-gray-800'}>{value}</span>
+      <span className="text-gray-500 text-sm">{label}</span>
+      <span className={mono ? 'font-mono text-xs text-gray-700 truncate' : 'text-sm text-gray-700'}>{value}</span>
     </>
   )
 }

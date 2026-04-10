@@ -25,33 +25,42 @@ export default function Header() {
   const page = pageTitles[location.pathname] ?? { title: '', description: '' }
 
   return (
-    <header className="h-14 border-b bg-white flex items-center justify-between px-6">
+    <header className="h-14 bg-white border-b border-gray-100 shadow-[0_1px_0_0_rgba(0,0,0,0.04)] flex items-center justify-between px-6 flex-shrink-0">
       <div>
-        <h1 className="text-lg font-semibold text-gray-900">{page.title}</h1>
-        <p className="text-xs text-gray-500">{page.description}</p>
+        <h1 className="text-[15px] font-semibold text-gray-900 leading-tight">{page.title}</h1>
+        <p className="text-xs text-gray-400 leading-tight">{page.description}</p>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* 알림 벨 */}
-        <button className="relative text-gray-500 hover:text-gray-700">
-          <span className="text-xl">&#128276;</span>
+      <div className="flex items-center gap-5">
+        {/* 알림 */}
+        <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
           {notifications.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-medium">
               {notifications.length}
             </span>
           )}
         </button>
 
+        {/* 구분선 */}
+        <div className="w-px h-5 bg-gray-200" />
+
         {/* 사용자 */}
         {user && (
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <div className="text-sm font-medium text-gray-700">{user.name}</div>
-              <div className="text-xs text-gray-400">{user.roles.join(', ')}</div>
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-full bg-brand/10 flex items-center justify-center text-brand font-semibold text-xs flex-shrink-0">
+              {user.name[0]}
+            </div>
+            <div className="text-right hidden sm:block">
+              <div className="text-sm font-medium text-gray-800 leading-tight">{user.name}</div>
+              <div className="text-xs text-gray-400 leading-tight">{user.roles.join(', ')}</div>
             </div>
             <button
               onClick={logout}
-              className="text-xs text-gray-400 hover:text-red-500 ml-2"
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors ml-1"
             >
               로그아웃
             </button>

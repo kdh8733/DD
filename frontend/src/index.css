@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  input[type='text'],
+  input[type='number'],
+  input[type='url'],
+  input[type='date'],
+  input[type='email'],
+  select,
+  textarea {
+    @apply border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400
+           focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-card;
+  }
+  .btn-primary {
+    @apply bg-brand text-white px-5 py-2 rounded-lg text-sm font-medium
+           hover:bg-brand-hover disabled:opacity-40 transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-200 px-5 py-2 rounded-lg text-sm font-medium
+           hover:bg-gray-50 disabled:opacity-40 transition-colors;
+  }
+}

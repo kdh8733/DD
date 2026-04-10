@@ -22,13 +22,13 @@ export default function RBAC() {
   return (
     <div className="space-y-6">
       {/* Roles */}
-      <div className="bg-white rounded-lg border">
-        <div className="px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-900">역할 목록</h2>
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-800">역할 목록</h2>
         </div>
-        <div className="divide-y">
+        <div className="divide-y divide-gray-50">
           {roles.map((role) => (
-            <div key={role.id} className="px-5 py-3 flex items-center justify-between">
+            <div key={role.id} className="px-5 py-3.5 flex items-center justify-between">
               <div>
                 <span className="font-medium text-gray-900">{role.name}</span>
                 <span className="text-sm text-gray-500 ml-3">{role.description}</span>
@@ -39,39 +39,39 @@ export default function RBAC() {
       </div>
 
       {/* Permission Matrix */}
-      <div className="bg-white rounded-lg border">
-        <div className="px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-900">플레이북 권한 매트릭스</h2>
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-800">플레이북 권한 매트릭스</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-              <tr>
-                <th className="px-5 py-3 text-left">플레이북</th>
-                <th className="px-5 py-3 text-left">역할</th>
-                <th className="px-5 py-3 text-center">실행</th>
-                <th className="px-5 py-3 text-center">조회</th>
-                <th className="px-5 py-3 text-left">승인 요구</th>
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">플레이북</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">역할</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">실행</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">조회</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">승인 요구</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-50">
               {playbooks.map((pb) =>
                 permissions
                   .filter((p) => p.playbook === pb)
                   .map((perm, i) => (
-                    <tr key={`${perm.playbook}-${perm.role_id}`} className="hover:bg-gray-50">
+                    <tr key={`${perm.playbook}-${perm.role_id}`} className="hover:bg-gray-50 transition-colors">
                       {i === 0 && (
                         <td
-                          className="px-5 py-3 font-medium text-gray-900"
+                          className="px-5 py-3.5 font-medium text-gray-900"
                           rowSpan={permissions.filter((p) => p.playbook === pb).length}
                         >
                           {pb}
                         </td>
                       )}
-                      <td className="px-5 py-3">{perm.role_name}</td>
-                      <td className="px-5 py-3 text-center">{perm.can_execute ? '✓' : '—'}</td>
-                      <td className="px-5 py-3 text-center">{perm.can_view ? '✓' : '—'}</td>
-                      <td className="px-5 py-3">{perm.require_approval === 'none' ? '—' : perm.require_approval}</td>
+                      <td className="px-5 py-3.5 text-gray-600">{perm.role_name}</td>
+                      <td className="px-5 py-3.5 text-center text-green-600 font-medium">{perm.can_execute ? '✓' : '—'}</td>
+                      <td className="px-5 py-3.5 text-center text-green-600 font-medium">{perm.can_view ? '✓' : '—'}</td>
+                      <td className="px-5 py-3.5 text-gray-600">{perm.require_approval === 'none' ? '—' : perm.require_approval}</td>
                     </tr>
                   ))
               )}

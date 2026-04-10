@@ -1,4 +1,4 @@
-import { apiClient } from './client'
+import client from './client'
 
 export interface SyncStatus {
   enabled: boolean
@@ -13,6 +13,6 @@ export interface SyncStatus {
 }
 
 export const syncApi = {
-  getStatus: () => apiClient.get<SyncStatus>('/git-sync/status').then((r) => r.data),
-  trigger: () => apiClient.post<{ status: string }>('/git-sync/trigger').then((r) => r.data),
+  getStatus: () => client.get<SyncStatus>('/git-sync/status').then((r) => r.data),
+  trigger: () => client.post<{ status: string }>('/git-sync/trigger').then((r) => r.data),
 }

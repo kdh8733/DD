@@ -5,9 +5,16 @@ import clsx from 'clsx'
 import type { Severity } from '@/types'
 
 const severityStyles: Record<Severity, string> = {
-  critical: 'border-l-red-500 bg-red-50',
-  warning: 'border-l-yellow-500 bg-yellow-50',
-  info: 'border-l-blue-500 bg-blue-50',
+  critical: 'border-l-red-500 bg-red-50/50',
+  warning: 'border-l-yellow-500 bg-yellow-50/50',
+  info: 'border-l-brand bg-brand-light/40',
+}
+
+const severityLabels: Record<Severity | '', string> = {
+  '': '전체',
+  critical: 'Critical',
+  warning: 'Warning',
+  info: 'Info',
 }
 
 export default function Alerts() {
@@ -38,11 +45,11 @@ export default function Alerts() {
             key={s}
             onClick={() => setSeverityFilter(s)}
             className={clsx(
-              'px-3 py-1 rounded-lg text-sm',
-              severityFilter === s ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-100',
+              'px-4 py-1.5 rounded-lg text-sm font-medium transition-colors',
+              severityFilter === s ? 'bg-brand text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
             )}
           >
-            {s || '전체'}
+            {severityLabels[s]}
           </button>
         ))}
       </div>
@@ -53,35 +60,34 @@ export default function Alerts() {
           <div
             key={alert.id}
             className={clsx(
-              'bg-white rounded-lg border border-l-4 p-4',
+              'rounded-xl border border-l-4 p-4 shadow-card transition-opacity',
               severityStyles[alert.severity],
-              alert.acked && 'opacity-60',
+              alert.acked && 'opacity-50',
             )}
           >
             <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium uppercase text-gray-500">{alert.severity}</span>
-                  <h3 className="font-semibold text-gray-900">{alert.title}</h3>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-semibold uppercase text-gray-500 tracking-wide">{alert.severity}</span>
+                  <h3 className="font-semibold text-gray-900 truncate">{alert.title}</h3>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{alert.body}</p>
+                <p className="text-sm text-gray-600">{alert.body}</p>
                 <div className="text-xs text-gray-400 mt-2">
-                  출처: {alert.source}
-                  {alert.job_id && <> | Job #{alert.job_id}</>}
-                  {' | '}{alert.created_at}
+                  {alert.source}
+                  {alert.job_id && <> · Job #{alert.job_id}</>}
+                  {' · '}{alert.created_at}
                 </div>
               </div>
-              {!alert.acked && (
+              {!alert.acked ? (
                 <button
                   onClick={() => ackMutation.mutate(alert.id)}
                   disabled={ackMutation.isPending}
-                  className="text-sm text-brand hover:text-brand-hover whitespace-nowrap"
+                  className="ml-4 text-sm font-medium text-brand hover:text-brand-hover transition-colors flex-shrink-0"
                 >
                   확인
                 </button>
-              )}
-              {alert.acked && (
-                <span className="text-xs text-gray-400">확인됨 ({alert.acked_by})</span>
+              ) : (
+                <span className="ml-4 text-xs text-gray-400 flex-shrink-0">확인됨 ({alert.acked_by})</span>
               )}
             </div>
           </div>
@@ -89,7 +95,7 @@ export default function Alerts() {
       </div>
 
       {(!filtered || filtered.length === 0) && (
-        <div className="text-center py-12 text-gray-400">알림이 없습니다</div>
+        <div className="card py-16 text-center text-sm text-gray-400">알림이 없습니다</div>
       )}
     </div>
   )

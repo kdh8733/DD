@@ -20,8 +20,8 @@
   <text x="30" y="332" font-size="14" fill="#6b7280">🖥️</text><text x="52" y="332" font-size="12.5" fill="#6b7280">인벤토리</text>
   <text x="30" y="360" font-size="14" fill="#6b7280">📋</text><text x="52" y="360" font-size="12.5" fill="#6b7280">플레이북</text>
   <!-- Workers (active) -->
-  <rect x="8" y="368" width="204" height="34" rx="6" fill="rgba(99,102,241,0.18)"/>
-  <rect x="8" y="368" width="2" height="34" rx="1" fill="#6366f1"/>
+  <rect x="8" y="368" width="204" height="34" rx="6" fill="rgba(0,100,255,0.15)"/>
+  <rect x="8" y="368" width="2" height="34" rx="1" fill="#0064FF"/>
   <text x="30" y="390" font-size="14" fill="#a5b4fc">⚙️</text>
   <text x="52" y="390" font-size="12.5" font-weight="500" fill="#a5b4fc">Worker Nodes</text>
   <text x="16" y="418" font-size="10" font-weight="600" fill="#374151" letter-spacing="1">관리</text>
@@ -43,7 +43,7 @@
   <!-- Control Plane Card -->
   <rect x="236" y="72" width="700" height="112" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1"/>
   <text x="252" y="96" font-size="13" font-weight="700" fill="#0f172a">🎛️ Control Plane</text>
-  <rect x="236" y="72" width="700" height="3" rx="2" fill="#6366f1"/>
+  <rect x="236" y="72" width="700" height="3" rx="2" fill="#0064FF"/>
 
   <!-- CP stats -->
   <rect x="252" y="106" width="150" height="64" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
@@ -65,9 +65,9 @@
   <text x="829" y="122" font-size="10" font-weight="600" fill="#475569" text-anchor="middle">KEDA 스케일</text>
   <!-- Scale bar -->
   <rect x="752" y="130" width="154" height="8" rx="4" fill="#e2e8f0"/>
-  <rect x="752" y="130" width="39" height="8" rx="4" fill="#6366f1"/>
+  <rect x="752" y="130" width="39" height="8" rx="4" fill="#0064FF"/>
   <text x="829" y="154" font-size="11" fill="#475569" text-anchor="middle">4 / 16 pods</text>
-  <text x="829" y="168" font-size="10" fill="#6366f1" text-anchor="middle">큐 깊이 기반 자동확장</text>
+  <text x="829" y="168" font-size="10" fill="#0064FF" text-anchor="middle">큐 깊이 기반 자동확장</text>
 
   <!-- Worker Node Cards (2x2 grid) -->
   <!-- Worker 1 -->
@@ -84,7 +84,7 @@
   <text x="278" y="286" font-size="10" fill="#475569">k8s-worker-dc1 · 진행률 70%</text>
   <!-- Progress -->
   <rect x="252" y="298" width="304" height="6" rx="3" fill="#e2e8f0"/>
-  <rect x="252" y="298" width="213" height="6" rx="3" fill="#6366f1"/>
+  <rect x="252" y="298" width="213" height="6" rx="3" fill="#0064FF"/>
   <!-- Stats -->
   <text x="252" y="322" font-size="11" fill="#475569">처리: 18건 오늘 · 평균 3분 24초</text>
   <text x="252" y="340" font-size="11" fill="#94a3b8">업타임: 6d 14h · ansible 2.17.1</text>
@@ -102,7 +102,7 @@
   <text x="626" y="276" font-size="11" fill="#1e40af" font-weight="600">JOB-2040 · redis.yml</text>
   <text x="626" y="286" font-size="10" fill="#475569">redis-cluster-dc1 · 진행률 30%</text>
   <rect x="600" y="298" width="320" height="6" rx="3" fill="#e2e8f0"/>
-  <rect x="600" y="298" width="96" height="6" rx="3" fill="#6366f1"/>
+  <rect x="600" y="298" width="96" height="6" rx="3" fill="#0064FF"/>
   <text x="600" y="322" font-size="11" fill="#475569">처리: 14건 오늘 · 평균 4분 12초</text>
   <text x="600" y="340" font-size="11" fill="#94a3b8">업타임: 6d 14h · ansible 2.17.1</text>
   <text x="600" y="356" font-size="11" fill="#94a3b8">CPU 22% · MEM 0.8GB</text>
@@ -139,8 +139,8 @@
 
   <defs>
     <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1"/>
-      <stop offset="100%" style="stop-color:#8b5cf6"/>
+      <stop offset="0%" style="stop-color:#0064FF"/>
+      <stop offset="100%" style="stop-color:#0064FF"/>
     </linearGradient>
   </defs>
 </svg>

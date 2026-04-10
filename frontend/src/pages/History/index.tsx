@@ -20,11 +20,11 @@ export default function History() {
   return (
     <div className="space-y-4">
       {/* 필터 */}
-      <div className="flex flex-wrap gap-3 bg-white rounded-lg border p-4">
+      <div className="card p-4 flex flex-wrap gap-3">
         <select
           value={filter.status ?? ''}
           onChange={(e) => updateFilter('status', e.target.value || undefined)}
-          className="border rounded-lg px-3 py-1.5 text-sm"
+          className="w-auto"
         >
           <option value="">전체 상태</option>
           <option value="queued">대기</option>
@@ -38,59 +38,57 @@ export default function History() {
           placeholder="플레이북"
           value={filter.playbook ?? ''}
           onChange={(e) => updateFilter('playbook', e.target.value || undefined)}
-          className="border rounded-lg px-3 py-1.5 text-sm"
+          className="w-36"
         />
         <input
           type="text"
           placeholder="플랫폼"
           value={filter.platform ?? ''}
           onChange={(e) => updateFilter('platform', e.target.value || undefined)}
-          className="border rounded-lg px-3 py-1.5 text-sm"
+          className="w-32"
         />
         <input
           type="date"
           value={filter.start_date ?? ''}
           onChange={(e) => updateFilter('start_date', e.target.value || undefined)}
-          className="border rounded-lg px-3 py-1.5 text-sm"
         />
         <input
           type="date"
           value={filter.end_date ?? ''}
           onChange={(e) => updateFilter('end_date', e.target.value || undefined)}
-          className="border rounded-lg px-3 py-1.5 text-sm"
         />
       </div>
 
       {/* 테이블 */}
-      <div className="bg-white rounded-lg border overflow-x-auto">
+      <div className="card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-            <tr>
-              <th className="px-5 py-3 text-left">ID</th>
-              <th className="px-5 py-3 text-left">플레이북</th>
-              <th className="px-5 py-3 text-left">플랫폼</th>
-              <th className="px-5 py-3 text-left">환경</th>
-              <th className="px-5 py-3 text-left">서버수</th>
-              <th className="px-5 py-3 text-left">실행자</th>
-              <th className="px-5 py-3 text-left">상태</th>
-              <th className="px-5 py-3 text-left">시각</th>
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">플레이북</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">플랫폼</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">환경</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">서버수</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">실행자</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">상태</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">시각</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-gray-50">
             {data?.data.map((job) => (
               <tr
                 key={job.id}
-                className="hover:bg-gray-50 cursor-pointer"
+                className="hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => setSelectedJobId(job.id)}
               >
-                <td className="px-5 py-3 font-mono">#{job.id}</td>
-                <td className="px-5 py-3">{job.playbook}</td>
-                <td className="px-5 py-3">{job.platform}</td>
-                <td className="px-5 py-3">{job.environment}</td>
-                <td className="px-5 py-3">{job.hosts_total}</td>
-                <td className="px-5 py-3">{job.triggered_by}</td>
-                <td className="px-5 py-3"><StatusBadge status={job.status} size="sm" /></td>
-                <td className="px-5 py-3 text-gray-400">{job.created_at}</td>
+                <td className="px-5 py-3.5 font-mono text-gray-600">#{job.id}</td>
+                <td className="px-5 py-3.5 text-gray-800">{job.playbook}</td>
+                <td className="px-5 py-3.5 text-gray-600">{job.platform}</td>
+                <td className="px-5 py-3.5 text-gray-600">{job.environment}</td>
+                <td className="px-5 py-3.5 text-gray-600">{job.hosts_total}</td>
+                <td className="px-5 py-3.5 text-gray-600">{job.triggered_by}</td>
+                <td className="px-5 py-3.5"><StatusBadge status={job.status} size="sm" /></td>
+                <td className="px-5 py-3.5 text-gray-400">{job.created_at}</td>
               </tr>
             ))}
           </tbody>
@@ -105,14 +103,14 @@ export default function History() {
             <button
               disabled={filter.offset === 0}
               onClick={() => setFilter((f) => ({ ...f, offset: Math.max(0, (f.offset ?? 0) - (f.limit ?? 20)) }))}
-              className="px-3 py-1 border rounded disabled:opacity-50"
+              className="btn-secondary px-4 py-1.5"
             >
               이전
             </button>
             <button
               disabled={(filter.offset ?? 0) + (filter.limit ?? 20) >= data.total}
               onClick={() => setFilter((f) => ({ ...f, offset: (f.offset ?? 0) + (f.limit ?? 20) }))}
-              className="px-3 py-1 border rounded disabled:opacity-50"
+              className="btn-secondary px-4 py-1.5"
             >
               다음
             </button>
@@ -122,10 +120,10 @@ export default function History() {
 
       {/* 선택된 Job 로그 */}
       {selectedJobId && (
-        <div className="bg-white rounded-lg border p-4">
+        <div className="card p-5">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold">Job #{selectedJobId} 로그</h3>
-            <button onClick={() => setSelectedJobId(null)} className="text-gray-400 hover:text-gray-600">닫기</button>
+            <h3 className="font-semibold text-gray-800">Job #{selectedJobId} 로그</h3>
+            <button onClick={() => setSelectedJobId(null)} className="text-sm text-gray-400 hover:text-gray-600 transition-colors">닫기</button>
           </div>
           <LogViewer jobId={selectedJobId} />
         </div>

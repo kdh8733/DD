@@ -18,29 +18,29 @@ export default function Workflow() {
   return (
     <div className="space-y-4">
       {workflows?.map((wf) => (
-        <div key={wf.id} className="bg-white rounded-lg border p-5">
-          <div className="flex items-start justify-between mb-2">
+        <div key={wf.id} className="card p-5">
+          <div className="flex items-start justify-between mb-3">
             <div>
               <h3 className="font-semibold text-gray-900">{wf.name}</h3>
-              <p className="text-sm text-gray-500">{wf.description}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{wf.description}</p>
             </div>
             <button
               onClick={() => triggerMutation.mutate(wf.id)}
               disabled={triggerMutation.isPending}
-              className="bg-brand text-white px-4 py-1.5 rounded-lg text-sm hover:bg-brand-hover disabled:opacity-50"
+              className="btn-primary"
             >
               실행
             </button>
           </div>
           <WorkflowPipeline steps={wf.definition.steps} />
-          <div className="text-xs text-gray-400 mt-2">
-            상태: {wf.status} | 트리거: {wf.triggered_by} | {wf.created_at}
+          <div className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
+            상태: {wf.status} · 트리거: {wf.triggered_by} · {wf.created_at}
           </div>
         </div>
       ))}
 
       {(!workflows || workflows.length === 0) && (
-        <div className="text-center py-12 text-gray-400">등록된 워크플로우가 없습니다</div>
+        <div className="card py-16 text-center text-sm text-gray-400">등록된 워크플로우가 없습니다</div>
       )}
     </div>
   )
