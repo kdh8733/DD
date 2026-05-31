@@ -123,7 +123,7 @@
   <circle cx="332" cy="227" r="4" fill="#3b82f6"/>
   <text x="354" y="231" font-size="10" font-weight="600" fill="#1e40af" text-anchor="middle">running</text>
   <text x="400" y="230" font-size="12" fill="#475569">k8s.yml</text>
-  <text x="480" y="230" font-size="12" fill="#475569">k8s-worker-dc1</text>
+  <text x="510" y="230" font-size="12" fill="#475569">k8s-worker-dc1</text>
   <text x="620" y="230" font-size="12" fill="#475569">admin.user</text>
   <rect x="700" y="218" width="140" height="6" rx="3" fill="#e2e8f0"/>
   <rect x="700" y="218" width="98" height="6" rx="3" fill="#0064FF"/>
@@ -134,7 +134,7 @@
   <circle cx="332" cy="257" r="4" fill="#3b82f6"/>
   <text x="354" y="261" font-size="10" font-weight="600" fill="#1e40af" text-anchor="middle">running</text>
   <text x="400" y="260" font-size="12" fill="#475569">redis.yml</text>
-  <text x="480" y="260" font-size="12" fill="#475569">redis-cluster-dc1</text>
+  <text x="510" y="260" font-size="12" fill="#475569">redis-cluster-dc1</text>
   <text x="620" y="260" font-size="12" fill="#475569">devops.user</text>
   <rect x="700" y="248" width="140" height="6" rx="3" fill="#e2e8f0"/>
   <rect x="700" y="248" width="42" height="6" rx="3" fill="#0064FF"/>
@@ -147,7 +147,7 @@
   <circle cx="332" cy="287" r="4" fill="#f59e0b"/>
   <text x="358" y="291" font-size="10" font-weight="600" fill="#92400e" text-anchor="middle">pending</text>
   <text x="400" y="290" font-size="12" fill="#475569">elasticsearch.yml</text>
-  <text x="480" y="290" font-size="12" fill="#475569">es-data-dc1</text>
+  <text x="510" y="290" font-size="12" fill="#475569">es-data-dc1</text>
   <text x="620" y="290" font-size="12" fill="#475569">devops.user</text>
   <text x="848" y="290" font-size="11" fill="#94a3b8">대기 중</text>
 
