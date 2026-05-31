@@ -25,7 +25,7 @@ AWX의 불편한 UX를 대체하여 **대규모 인프라(Physical DC, OpenStack
 
 ## UI 미리보기
 
-> 인터랙티브 프로토타입 전체 보기: **[MVP.html 바로 열기](https://htmlpreview.github.io/?https://github.com/kdh8733/DD/blob/main/MVP.html)**
+> 인터랙티브 프로토타입
 
 ### 통합 대시보드
 실행 중인 배포 현황, 성공률, 승인 대기, 알림을 한눈에 확인합니다.
