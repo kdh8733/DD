@@ -16,7 +16,7 @@ AWX의 불편한 UX를 대체하여 **대규모 인프라(Physical DC, OpenStack
 - **10,000+ 서버** 대상 배포 지원
 - **Keycloak SSO** 인증 (OIDC/SAML 2.0)
 - **RBAC** 기반 세밀한 권한 제어
-- **Ansible Worker Scale-out** (KEDA 기반 자동 확장)
+- **Ansible Worker 풀** (replicas 조정 / 필요시 HPA)
 - **실시간 로그 스트리밍** (WebSocket)
 - **승인 기반 배포 워크플로우**
 - **CMDB 자동 동기화** + Static JSON 캐시 (고성능 인벤토리)
@@ -43,7 +43,7 @@ AWX의 불편한 UX를 대체하여 **대규모 인프라(Physical DC, OpenStack
 ![Workflow](docs/screenshots/workflow.svg)
 
 ### Worker Nodes
-Ansible Worker Pod의 실행 현황과 KEDA 기반 자동 스케일 상태를 모니터링합니다.
+Ansible Worker Pod의 실행 현황과 replicas 상태를 모니터링합니다.
 
 ![Workers](docs/screenshots/workers.svg)
 
@@ -162,7 +162,7 @@ dookdak/
 │   └── k8s/              # Kubernetes 매니페스트
 │       ├── namespace.yaml
 │       ├── api-deployment.yaml   # + HPA
-│       ├── worker-deployment.yaml # + KEDA ScaledObject
+│       ├── worker-deployment.yaml # Worker Deployment (+ 선택적 HPA)
 │       ├── ingress.yaml
 │       ├── configmap.yaml
 │       └── secret.yaml
@@ -238,7 +238,7 @@ make k8s-apply
 make k8s-scale-worker replicas=8
 ```
 
-KEDA를 사용하면 Redis 큐 깊이 기반으로 Worker Pod가 자동 확장됩니다 (2~16개).
+Worker는 기본 replicas로 운영하며, 부하에 따라 `make k8s-scale-worker`로 조정하거나 HPA(CPU)로 자동 확장할 수 있습니다 (on-prem 기준, 운영 중 정책 결정).
 
 ---
 

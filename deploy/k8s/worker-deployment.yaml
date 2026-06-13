@@ -76,26 +76,27 @@ spec:
             secretName: ansible-ssh-key
             defaultMode: 0400
 ---
-# KEDA ScaledObject — Redis 큐 깊이 기반 자동 스케일
-apiVersion: keda.sh/v1alpha1
-kind: ScaledObject
+# Worker 스케일링 — on-prem 기준 HPA(CPU). 기본은 위 replicas, 부하 시 자동 확장.
+# (큐 깊이 기반 이벤트 오토스케일은 미도입 — replicas 조정 / HPA로 운영)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
 metadata:
-  name: dookdak-worker-scaler
+  name: dookdak-worker-hpa
   namespace: dookdak
 spec:
   scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
     name: dookdak-worker
-  minReplicaCount: 2
-  maxReplicaCount: 16
-  pollingInterval: 15
-  cooldownPeriod: 60
-  triggers:
-    - type: redis
-      metadata:
-        address: redis-service.dookdak.svc.cluster.local:6379
-        listName: "asynq:{default}:queued"
-        listLength: "10"    # 큐 Job 10개당 Worker 1개 추가
-        enableTLS: "false"
+  minReplicas: 2
+  maxReplicas: 16
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
 ---
 apiVersion: v1
 kind: ServiceAccount

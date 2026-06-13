@@ -470,22 +470,26 @@ kubectl scale deployment ansible-worker --replicas=8 -n dookdak
 - Job 결과는 PostgreSQL에 기록 (중복 없음)
 - 로그 스트리밍: Worker → Redis Pub/Sub → API WS → 브라우저
 
-**KEDA (Kubernetes Event-driven Autoscaling) 설정 예시:**
+**Worker 스케일링 (on-prem 기준):** 기본은 고정 replicas, 부하 증가 시 HPA(CPU)로 자동 확장한다. 큐 깊이 기반 이벤트 오토스케일(KEDA 등)은 도입하지 않으며, replicas 조정 / HPA로 충분하다.
 ```yaml
-apiVersion: keda.sh/v1alpha1
-kind: ScaledObject
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
 metadata:
-  name: ansible-worker-scaler
+  name: ansible-worker-hpa
 spec:
   scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
     name: ansible-worker
-  minReplicaCount: 2
-  maxReplicaCount: 16
-  triggers:
-    - type: redis
-      metadata:
-        listName: "asynq:{default}:queued"
-        listLength: "10"   # 큐 10개당 Worker 1개 추가
+  minReplicas: 2
+  maxReplicas: 16
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70   # CPU 70% 초과 시 확장
 ```
 
 ---
@@ -516,7 +520,7 @@ spec:
 | 컴포넌트 | HA 방식 | 비고 |
 |---------|---------|------|
 | API Server | 다중 Pod + LB | Stateless, 수평 확장 |
-| Ansible Worker | 다중 Pod (큐 공유) | Stateless, KEDA 자동 확장 |
+| Ansible Worker | 다중 Pod (큐 공유) | Stateless, replicas 조정 / HPA |
 | PostgreSQL | Primary + Replica | 장애 시 Failover |
 | Redis | Sentinel or Cluster | Asynq는 Sentinel 지원 |
 | Keycloak | Active-Active (DB 공유) | 세션 공유 필요 |
@@ -595,7 +599,7 @@ Alert Rules (Prometheus):
 
 ### Phase 3 — Self-Service & Scale
 - [ ] 셀프서비스 카탈로그
-- [ ] Worker 자동 Scale-out (KEDA)
+- [ ] Worker Scale-out (HPA / replicas 조정)
 - [ ] 알림 센터 + PagerDuty 연동
 - [ ] Dry-run 시각화
 
