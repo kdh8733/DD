@@ -30,22 +30,22 @@ AWX의 불편한 UX를 대체하여 **대규모 인프라(Physical DC, OpenStack
 ### 통합 대시보드
 실행 중인 배포 현황, 성공률, 승인 대기, 알림을 한눈에 확인합니다.
 
-![Dashboard](docs/screenshots/dashboard.svg)
+![Dashboard](docs/screenshots/dashboard.png)
 
 ### 배포 실행
 플랫폼 · 액션 · 환경 · 대상 호스트를 선택하고 배포를 트리거합니다. Dry Run 모드와 승인 워크플로우를 지원합니다.
 
-![Deploy](docs/screenshots/deploy.svg)
+![Deploy](docs/screenshots/deploy.png)
 
 ### 워크플로우
 다단계 파이프라인의 실시간 진행 상황을 추적하고 승인/거부를 처리합니다.
 
-![Workflow](docs/screenshots/workflow.svg)
+![Workflow](docs/screenshots/workflow.png)
 
 ### Worker Nodes
 Ansible Worker Pod의 실행 현황과 replicas 상태를 모니터링합니다.
 
-![Workers](docs/screenshots/workers.svg)
+![Workers](docs/screenshots/workers.png)
 
 ---
 
